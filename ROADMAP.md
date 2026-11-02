@@ -2,6 +2,10 @@
 
 Status: **Complete**, **In progress**, **Blocked**, **Upcoming**. Completion means criteria are met and verification evidence is recorded; documenting a plan does not complete implementation.
 
+## Cloudflare deployment preparation: 2026-11-02
+
+Owner requested deployment to `whizz.repondly.com`. Prepared `DEPLOYMENT.md` with GitHub-connected Cloudflare Pages Free configuration, production-only Supabase public variables, Node 24, static `out` output, domain association, Auth site URL, backend prerequisites, owner acceptance, and frontend rollback. Added `npm run build:cloudflare` to reuse the existing environment schema and reject missing/invalid production configuration before building. Existing general build and manual CI remain unchanged. Self-review covered static hosting compatibility, browser-safe configuration, RLS responsibility, separate account identities, and the independent collector process. No checks, builds, servers, browser runs, diff/inline checks, commits, pushes, merges, hosted queries, migrations, provisioning, deployment, or DNS changes were executed. GitHub release revision, Cloudflare connection, backend readiness, custom-domain activation, and owner verification remain pending; deployment and milestones are not complete.
+
 | ID | Milestone | Status | Completion criteria / dependency |
 | --- | --- | --- | --- |
 | P0 | Inspect repository and write planning baseline | Complete | Empty repository inspected; seven planning documents created; unresolved rules recorded. Owner approval pending. |

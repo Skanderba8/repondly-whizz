@@ -1,6 +1,6 @@
 # Whizz Repondly
 
-A private support-performance workspace, currently at the application foundation stage. The public preview contains no employee/customer data and no authentication or record mutations yet.
+A private support-performance workspace using a statically exported Next.js interface and Supabase Auth, reporting, and private evidence storage. Hosted setup and owner acceptance remain separate from implementation delivery.
 
 ## Local setup
 Use Node 24 and npm. Run `npm ci` after cloning. Copy `.env.example` to `.env.local` if needed, then supply the Supabase project URL and publishable key. Never use a secret or service-role key in public environment variables. Existing local configuration should be preserved.
@@ -20,9 +20,9 @@ npm run test:e2e
 The browser tests serve the built `out` folder on port 4173 and exercise desktop/mobile navigation, direct-route refresh, and keyboard access. Unit tests cover current-page navigation semantics and public configuration validation. No live Supabase credentials or network access are needed for these tests. GitHub Actions provides the same flow through manual dispatch; automatic triggers are intentionally disabled for now.
 
 ## Cloudflare Pages
-Connect the GitHub repository after the feature branch is reviewed and merged. Use Pages, production branch `main`, build command `npm run build`, output directory `out`, and Node 24. Add the two variables from `.env.example` to the production build environment before implementing auth. Public values are compiled into the bundle, so changes need a rebuild. Do not give preview builds production credentials when real-data features are introduced.
+Follow [DEPLOYMENT.md](DEPLOYMENT.md) for the complete GitHub, Supabase, Pages, custom-domain, acceptance, and rollback steps. Use Pages, the reviewed production branch, build command `npm run build:cloudflare`, output directory `out`, and Node 24. Add the two variables from `.env.example` to the production build environment. The deployment command validates them before building. Public values are compiled into the bundle, so changes need a rebuild. Keep preview deployments disabled until a separate synthetic-data backend is configured.
 
-Attach `whizz.repondly.com` through the Pages project's Custom domains flow after the first successful deployment. Cloudflare hosting and DNS have not been configured by this scaffold.
+Attach `whizz.repondly.com` through the Pages project's Custom domains flow after the first successful deployment. Cloudflare hosting and DNS have not been configured by the agent.
 
 ## Structure
 - `src/app`: static routes, layout, and semantic theme tokens.
@@ -31,4 +31,4 @@ Attach `whizz.repondly.com` through the Pages project's Custom domains flow afte
 - `tests/unit`, `tests/e2e`: prepared Vitest and Playwright coverage.
 - `public/_headers`: Cloudflare response headers.
 
-Feature modules and Supabase migrations will be added when their first feature needs them. See ROADMAP.md for status and DATA_RULES.md for decisions required before implementation.
+Feature modules and Supabase migrations are included. See ROADMAP.md for delivery status, supabase/README.md for backend setup, and DATA_RULES.md for unresolved rules.
