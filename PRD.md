@@ -15,6 +15,8 @@ Help employees understand their own performance and help management review relia
 These are product intentions, not an approved permission matrix. Access defaults to denied until defined.
 
 ## Delivery scope
+Current core scope was refined on 2026-11-02 under D23-D24: automatically collect Whizz assistant CSR reports from configured store groups using the owner's Telegram account; use reported daily points as authoritative; manually track Google Maps reviews and DoorDash promo subscriptions without manager approval. This is a personal bonus tracker, not payroll or proof of payout. RTF commission, review payments, and DoorDash bonuses stay separate from points. These later decisions supersede the earlier manual-first/import-later and submission-approval assumptions below.
+
 First release: invite-based private access; agreed role permissions; manual subscription and review records with protected screenshots; personal daily, weekly, and monthly points/history; manager team insights; traceable corrections.
 
 Later: Telegram performance report import after manual records and reconciliation rules are stable. Design for a future source adapter; do not build an integration now.
@@ -32,4 +34,6 @@ No public registration, public leaderboard, billing, payroll, complex organizati
 DATA_RULES.md tracks unresolved scoring, reporting periods, evidence, approvals, corrections, import, and retention rules. No scoring values or real employee data are approved.
 
 ## Current authorization
+Superseding update, 2026-11-02: the owner authorized core implementation under D23-D24. The supplied team names and stores may be used for configuration; live employee performance reads, Telegram sign-in, hosted changes, deployment, and credential entry have not been performed. Account/name mappings are pending owner input. Earlier planning-only wording below records the original phase.
+
 Planning documents only. No application implementation, package installation, account creation, deployment, DNS edits, Telegram connection, or real-data access is authorized by this phase.
