@@ -18,3 +18,12 @@ supabase/.branches/
 .DS_Store
 Thumbs.db
 usage.md
+.secrets/
+.venv/
+*.session
+*.session-journal
+*.session-wal
+*.session-shm
+collector/config.local.json
+__pycache__/
+*.pyc

@@ -8,10 +8,11 @@ import { accessRoleSchema, type WorkspaceAccount } from "./access";
 import { LoginForm } from "./login-form";
 import { LoaderCircle, ShieldCheck, ShieldX, WifiOff } from "lucide-react";
 import { AccessFrame } from "@/components/access-frame";
+import { TrackerProvider } from "@/features/tracker/tracker-provider";
 
 type AccessState =
   | { status: "loading" | "signed-out" | "denied" | "error" }
-  | { status: "ready"; account: WorkspaceAccount };
+  | { status: "ready" | "checking"; account: WorkspaceAccount };
 
 export function AuthBoundary({ children }: { children: React.ReactNode }) {
   const [access, setAccess] = useState<AccessState>({ status: "loading" });
@@ -20,6 +21,7 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
   const [logoutError, setLogoutError] = useState("");
   const requestId = useRef(0);
   const logoutBusy = useRef(false);
+  const lastFocusRefresh = useRef(0);
 
   useEffect(() => {
     let disposed = false;
@@ -38,7 +40,8 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
           setAccess({ status: "signed-out" });
           return;
         }
-        setAccess({ status: "loading" });
+        setAccess((previous) => (previous.status === "ready" || previous.status === "checking") && previous.account.userId === session.user.id
+          ? { status: "checking", account: previous.account } : { status: "loading" });
         // Keep Supabase requests outside the auth callback's lock.
         timer = setTimeout(() => {
           async function loadAccess() {
@@ -73,9 +76,11 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
     }
 
     function revalidate() {
-      if (hasSession && document.visibilityState === "visible" && !logoutBusy.current) {
+      if (hasSession && document.visibilityState === "visible" && !logoutBusy.current && Date.now() - lastFocusRefresh.current >= 30_000) {
+        lastFocusRefresh.current = Date.now();
         ++requestId.current;
-        setAccess({ status: "loading" });
+        setAccess((previous) => previous.status === "ready" || previous.status === "checking"
+          ? { status: "checking", account: previous.account } : { status: "loading" });
         setRevision((value) => value + 1);
       }
     }
@@ -120,8 +125,8 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
     return <AccessFrame><section aria-labelledby="access-loading-title" className="access-panel"><ShieldCheck aria-hidden="true" className="mb-6 size-6 text-muted-foreground" /><h1 id="access-loading-title" className="section-title">{signingOut ? "Leaving your workspace" : "Opening your workspace"}</h1><p role="status" className="mt-3 flex items-center gap-3 text-sm text-muted-foreground"><LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin" />{signingOut ? "Logging out..." : "Checking workspace access..."}</p></section></AccessFrame>;
   }
   if (access.status === "signed-out") return <LoginForm />;
-  if (access.status === "ready") {
-    return <WorkspaceShell account={access.account} onSignOut={signOut}>{children}</WorkspaceShell>;
+  if (access.status === "ready" || access.status === "checking") {
+    return <WorkspaceShell account={access.account} onSignOut={signOut}><TrackerProvider key={`${access.account.userId}:${access.account.role}`} account={access.account}>{children}</TrackerProvider></WorkspaceShell>;
   }
   return (
     <AccessFrame><section aria-labelledby="access-error-title" className="access-panel">

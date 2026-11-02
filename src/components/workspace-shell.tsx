@@ -22,7 +22,8 @@ export function WorkspaceShell({ children, account, onSignOut }: {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const context = pathname === "/" ? "Overview" : pathname.replace(/\/$/, "") === "/activity" ? "Activity" : "Workspace";
+  const destinations: Record<string, string> = { "": "Overview", "/activity": "Activity", "/reviews": "Reviews", "/doordash": "DoorDash" };
+  const context = destinations[pathname.replace(/\/$/, "")] ?? "Workspace";
 
   useEffect(() => {
     const tablet = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
@@ -80,10 +81,10 @@ export function WorkspaceShell({ children, account, onSignOut }: {
             </Dialog.Root>
             <p className="flex items-center gap-3 text-sm"><span className="hidden text-muted-foreground sm:inline">Workspace</span><span aria-hidden="true" className="hidden text-subtle-foreground sm:inline">/</span><span className="font-medium">{context}</span></p>
           </div>
-          <div className="flex items-center gap-4"><span className="hidden text-xs text-muted-foreground sm:inline">Foundation preview</span><div className="md:hidden"><AccountMenu account={account} onSignOut={onSignOut} compact /></div></div>
+          <div className="flex items-center gap-4"><span className="hidden text-xs text-muted-foreground sm:inline">Personal bonus tracker</span><div className="md:hidden"><AccountMenu account={account} onSignOut={onSignOut} compact /></div></div>
         </header>
         <main id="main-content" tabIndex={-1} className="workspace-content">{children}</main>
-        <footer className="mx-auto max-w-[1440px] px-4 pt-2 pb-8 text-xs text-muted-foreground md:px-6 xl:px-8">Whizz Repondly <span aria-hidden="true">·</span> Foundation preview</footer>
+        <footer className="mx-auto max-w-[1440px] px-4 pt-2 pb-8 text-xs text-muted-foreground md:px-6 xl:px-8">Whizz Repondly <span aria-hidden="true">·</span> Personal bonus tracker</footer>
       </div>
     </div>
   );

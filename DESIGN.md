@@ -466,3 +466,16 @@ The 2026-11-02 redesign applies this system to existing surfaces: Overview, Acti
 - Keep route content static/server-rendered where appropriate; client islands own appearance, navigation, auth, and actual interactions. Do not add a chart library, state framework, animation library, or request-time Next feature for decoration.
 
 The redesign uses existing dependencies. A generated full-screen concept informed composition only; it is not shipped as a screenshot-based UI or production asset. Palette, navigation responsiveness, focus, menu behavior, first-paint appearance, login/logout, access failure, and layout at 320 px require owner review. No server, build, test, lint, diff, inline, browser, or performance checks were executed under the owner's execution preference. No measured performance or accessibility conformance is claimed.
+
+### Core tracker recipes: 2026-11-02
+
+D24-D25 supersede the earlier manual-first/import-later and approval assumptions for this slice. Navigation now includes Overview, Activity, Reviews, and DoorDash. Keep the existing shell, heading, panel, field, and semantic-token system.
+
+- Overview shows one selected-period reported-points total with its $0.50 value. A separate panel lists RTF commission, reviews, and DoorDash in dollars; never add these to point totals. Missing reports and missing RTF amounts remain unavailable/partial. Activity counts appear only in source details; uncertain per-activity points are not charted.
+- Reuse one day/week/month selector, a store timezone selector for the calendar anchor, and a date input. Manager employee selection changes the read scope, never the author of a submission. Period history is paginated at 25 rows with a desktop table/mobile semantic list. Reviews and DoorDash reuse the same filters with server-side record-type filtering.
+- Daily points use a semantic-token SVG bar chart with a zero baseline, no animation, explicit gaps, factual coverage summary, and an expandable equivalent data table. No library or fabricated hourly curve is introduced.
+- Manual entry uses store/work date plus the approved minimal fields. Notes are optional. Review upload accepts one owner-size-limited PNG/JPEG/WebP via the native file picker, with a contained preview and associated validation. The picker rather than a custom drag surface keeps this flow small and keyboard accessible. This intentionally extends the prior upload recipe. The image-size requirement is visible before selection; no upload runs until configured.
+- Evidence opens in a Radix dialog on demand with Close, Fit/Zoom, and renewed-access Retry. Source fields and report timestamps use native details/summary. Approved entries count immediately in the personal tracker; there are no approval badges or approval actions.
+- Shared `Select` and `Textarea` use the central `form-control` token recipe; table geometry and metric type are centralized in globals.css. Save uncertainty retains a request identity and locks its payload for safe retry. Successful persistence clears entry-specific fields, keeps store/date context, and refreshes totals/history.
+
+All rendering, keyboard/mobile behavior, accessibility, database policies, and performance remain owner verification items. No checks were executed.

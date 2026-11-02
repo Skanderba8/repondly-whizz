@@ -1,0 +1,17 @@
+{
+  "stores": [
+    { "name": "New Jersey", "timezone": "America/New_York", "chat_id": null, "sender_id": null, "location_names": ["New Jersey", "Jersey City Office"] },
+    { "name": "Brooklyn", "timezone": "America/New_York", "chat_id": null, "sender_id": null, "location_names": ["Brooklyn"] },
+    { "name": "Philadelphia", "timezone": "America/New_York", "chat_id": null, "sender_id": null, "location_names": ["Philadelphia", "Philadelphia Office"] },
+    { "name": "Chicago", "timezone": "America/Chicago", "chat_id": null, "sender_id": null, "topic": "general", "location_names": ["Chicago", "Chicago Office"] },
+    { "name": "San Francisco", "timezone": "America/Los_Angeles", "chat_id": null, "sender_id": null, "location_names": ["San Francisco", "San Francisco office"] },
+    { "name": "Washington DC", "timezone": "America/New_York", "chat_id": null, "sender_id": null, "topic": "general", "location_names": ["Washington DC", "Washington D.C.", "Washington DC Office"] },
+    { "name": "Union", "timezone": "America/New_York", "chat_id": null, "sender_id": null, "location_names": ["Union", "Manhattan Union"] },
+    { "name": "Harlem", "timezone": "America/New_York", "chat_id": null, "sender_id": null, "location_names": ["Harlem"] }
+  ],
+  "team_names": [
+    "Chams Eddine Amaima", "Khaled Mendoza Mendivelso", "Diego Riaño", "Skander Abdallah Ben",
+    "Kenzi Lefouili", "Juan Esteban Santos Guevara", "Abdul Samad", "Hakim Bedrania",
+    "Abdramane Mahamat Ali", "Neimat Mohammad", "Hadi Hamitouche", "Naila Bensid"
+  ]
+}

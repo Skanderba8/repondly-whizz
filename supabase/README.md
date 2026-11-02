@@ -52,3 +52,36 @@ Verify using synthetic accounts before real employee access:
 7. Change a database role and refocus the app to see the updated label. Verify TypeScript, lint, production static export, and prepared browser coverage when requested.
 
 References: [Supabase Auth configuration](https://supabase.com/docs/guides/auth/general-configuration), [password authentication](https://supabase.com/docs/guides/auth/passwords), [auth events](https://supabase.com/docs/reference/javascript/auth-onauthstatechange), [logout scope](https://supabase.com/docs/reference/javascript/auth-signout), and [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+## Core bonus tracker setup
+
+The D24-D25 tracker supersedes the earlier foundation-only behavior above. The following files are prepared, not applied. The owner must review and authorize hosted migration/function deployment separately.
+
+1. After the membership migration, apply `migrations/202611020002_bonus_tracker.sql`. It adds stores, report-name profiles, upload settings, reported productivity, self-reported bonuses, read policies, fixed-amount calculations, narrowly scoped RPCs, and a private `review-evidence` bucket. Browser users cannot edit/delete records, write imported points, upload objects directly, or alter configuration.
+2. Apply `configure-tracker.sql` to configure the eight supplied stores and their IANA timezones. Union is Manhattan. This creates no users or fabricated results.
+3. Once the owner identifies email/account mappings, add each account's exact supplied report name. Until then, names remain in collector configuration only and the app truthfully asks for setup. Example with synthetic identity values, to replace in the trusted SQL Editor:
+
+```sql
+insert into public.tracker_people(user_id, display_name, report_name, home_store_id)
+select '00000000-0000-0000-0000-000000000001', 'Morgan Example', 'Morgan Example', id
+from public.tracker_stores where name = 'Brooklyn';
+```
+
+`user_id` must already have owner-assigned membership. `report_name` must match the assistant's full name. `home_store_id` is optional; it is a calendar convenience, not an access restriction. Do not guess a name/account association. Managers need their own profile and may select any mapped team member for reads. Submissions always belong to the authenticated author.
+
+4. Choose the screenshot byte limit, update `tracker_settings.screenshot_max_bytes`, and set the private bucket's `file_size_limit` to the same value. It starts unset, so review uploads are blocked with a setup message. One PNG/JPEG/WebP is supported. Agree retention/redaction and capacity management before live evidence use; no automatic cleanup or deletion is enabled.
+5. Deploy the `save-review` Edge Function with its `deno.json` import map and access to `shared/bonus-schema.ts`. Keep JWT verification enabled and confirm the function's own Auth/membership checks. The function uses Supabase's server-only environment configuration; no service key belongs in the Next.js build. Its browser-safe response includes only a saved reference or safe error. Requests validate file bytes and type; rejected uploads do not create a bonus entry. A request interrupted after upload may leave a private unassociated object; retrying the same entry/hash resumes it. Orphan cleanup is an owner operation until retention rules are decided.
+6. Configure and run the personal account collector using `../collector/README.md`. Group/sender IDs, credentials, sign-in, and process hosting remain owner setup. No bot is needed. No collector credentials or live messages are in the frontend.
+
+### Owner verification for the core
+
+Prepared, not executed: synthetic parser cases and Sunday/Saturday/calendar-month unit coverage. Also verify with synthetic employee and manager accounts:
+
+- Role isolation for every table/RPC and private screenshot, including direct API access, forged owner IDs, missing/revoked membership, and attempted browser writes to points/configuration/storage. Managers can read team records but cannot assign access or submit for someone else.
+- Review note/image save, file size/type rejection, upload interruption, same-reference retry, concurrent retry, unavailable settings/function, expired signed URL, dialog keyboard/zoom/close, and screenshot selection without losing the draft on window-focus revalidation.
+- DoorDash save with checked/unchecked proof, no approval step, preserved subscription text, fixed $5 value, UUID retry, and strict separation from productivity points. Business deduplication across newly created entries is still undefined; do not claim it is enforced.
+- Reported zero versus missing reports, RTF missing versus zero revenue, decimal commission precision, multiple stores on one work date, exact-name matching, unknown staff exclusion, differing store timezones/DST, Sunday report for Saturday, Monday report for Sunday, leap February, and month/year boundaries.
+- Database totals versus source samples, type-filtered 25-row pagination, mobile lists, chart/data-table agreement, loading/failure/cache behavior, account switching, and manager/employee visibility. No category point estimates or payout rounding should appear.
+- Personal collector sender/group filtering, no Telegram writes, identical repeat imports, edited/conflicting daily reports, interrupted scans, and reported partial coverage. Reports more than one day late may require explicit owner reconciliation.
+
+No migration, function deployment, install, type/lint/build/unit/integration/browser check, dev server, diff check, or inline check was executed by the agent. Do not treat this delivery as production-ready or a completed milestone until owner verification and unresolved release rules are satisfied.
