@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { reviewSubmissionSchema } from "../../../shared/bonus-schema.ts";
+import { inspectScreenshot, screenshotDimensionsAllowed, screenshotMaxBytes } from "../../../shared/screenshot-policy.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,19 +11,6 @@ const cors = {
 
 function reply(status: number, body: Record<string, string>) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
-}
-
-function imageType(bytes: Uint8Array): string | null {
-  // Verify image signatures and container endings; never accept SVG or trust file extensions.
-  if (bytes.length < 24) return null;
-  if ([137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value)
-    && new TextDecoder().decode(bytes.slice(12, 16)) === "IHDR"
-    && new TextDecoder().decode(bytes.slice(-8, -4)) === "IEND") return "image/png";
-  if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 && bytes.at(-2) === 255 && bytes.at(-1) === 217) return "image/jpeg";
-  if (new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF"
-    && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP"
-    && new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true) + 8 === bytes.length) return "image/webp";
-  return null;
 }
 
 async function readForm(request: Request, maxBytes: number) {
@@ -60,7 +48,17 @@ Deno.serve(async (request: Request) => {
     if (memberError || !member) return reply(403, { error: "Workspace access is required." });
     const { data: settings, error: settingsError } = await userClient.from("tracker_settings").select("screenshot_max_bytes").eq("id", true).single();
     if (settingsError || !settings?.screenshot_max_bytes) return reply(422, { error: "The owner needs to configure the screenshot size limit." });
-    const form = await readForm(request, settings.screenshot_max_bytes);
+    const maxBytes = Math.min(settings.screenshot_max_bytes, screenshotMaxBytes);
+    if (!request.headers.get("Content-Type")?.toLowerCase().startsWith("multipart/form-data;")) return reply(415, { error: "Send a screenshot and review details as form data." });
+    if (Number(request.headers.get("Content-Length")) > maxBytes + 32768) return reply(413, { error: "The screenshot exceeds the configured size limit." });
+    let form: FormData;
+    try { form = await readForm(request, maxBytes); }
+    catch (error: unknown) {
+      if (error instanceof RangeError) return reply(413, { error: "The screenshot exceeds the configured size limit." });
+      return reply(400, { error: "The upload was incomplete or invalid. Choose the screenshot again." });
+    }
+    if (form.getAll("record").length !== 1 || form.getAll("screenshot").length !== 1
+      || Array.from(form.keys()).some((key) => key !== "record" && key !== "screenshot")) return reply(400, { error: "Send exactly one screenshot and one review record." });
     const rawRecord = form.get("record");
     if (typeof rawRecord !== "string") return reply(400, { error: "Review details are missing." });
     let decoded: unknown;
@@ -68,10 +66,12 @@ Deno.serve(async (request: Request) => {
     const parsed = reviewSubmissionSchema.safeParse(decoded);
     if (!parsed.success) return reply(400, { error: parsed.error.issues[0]?.message ?? "Check the review fields." });
     const file = form.get("screenshot");
-    if (!(file instanceof File) || file.size < 1 || file.size > settings.screenshot_max_bytes) return reply(413, { error: "Choose one screenshot within the configured size limit." });
+    if (!(file instanceof File) || file.size < 1 || file.size > maxBytes) return reply(413, { error: "Choose one screenshot within the configured size limit." });
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const mime = imageType(bytes);
-    if (!mime || mime !== file.type) return reply(400, { error: "Use a valid PNG, JPEG, or WebP screenshot." });
+    const image = inspectScreenshot(bytes);
+    const mime = image?.mime;
+    if (!image || !mime || mime !== file.type) return reply(400, { error: "Use a valid PNG, JPEG, or WebP screenshot." });
+    if (!screenshotDimensionsAllowed(image)) return reply(400, { error: "Use a screenshot up to 24 megapixels and 16,384 pixels per side. Crop to the review if needed." });
     const digest = await crypto.subtle.digest("SHA-256", bytes);
     const hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
     const record = parsed.data;

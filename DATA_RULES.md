@@ -90,4 +90,11 @@ D24 supersedes the unresolved source-authority, week-boundary, bonus eligibility
 
 Still unresolved: business duplicates across separately submitted manual entries, corrections/reversals, special delayed reports whose wording does not identify the actual work date, retention, offboarding, final payout rounding, and historical rate changes. None is silently implemented. Exact duplicate source imports and retries reuse stable identities; conflicting daily source reports are flagged instead of overwriting data. Commission retains fractional cents in Postgres and displays up to four dollar decimal places without a payout rounding rule.
 
-Screenshot implementation supports one PNG/JPEG/WebP with private record-scoped access. The owner must set the maximum byte size before uploads are enabled; there is no assumed default size or retention period. Notes have a technical 4,000-character limit. Image signatures/containers are checked at the trusted endpoint; no full image-decoder or malware scan is claimed.
+Screenshot implementation supports one PNG/JPEG/WebP with private record-scoped access. D38 sets a maximum of 10 MiB (10,485,760 bytes) per screenshot. Apply the limits migration before enabling uploads; no retention period is assumed. Notes have a technical 4,000-character limit. Image signatures/containers are checked at the trusted endpoint; no full image-decoder or malware scan is claimed.
+
+
+## Review screenshot refinement: 2026-11-03
+
+D38 confirms 10 MB per image (implemented as 10 MiB). One required PNG/JPEG/WebP remains the contract. Store-local today is the default and the work date remains editable. Before store selection, Eastern today is shown as a calendar convenience and saving still requires a store. The note is optional, compact, and retains its 4,000-character cap.
+
+Technical resource guards cap screenshots at 24 million pixels and 16,384 pixels per side in both browser and trusted endpoint. Browser decoding catches unreadable files for normal users; PNG re-encoding is lossless and used only when smaller, without resizing or lossy JPEG/WebP recompression. Original files remain when smaller; metadata removal is therefore not guaranteed. The endpoint checks size, raster headers/containers, MIME agreement, dimensions, authenticated ownership, membership, profile, store, and request identity. Full trusted image decoding and malware scanning are not implemented. Retention, storage-capacity operations, business duplicate detection across new entries, and correction/deletion rules remain unresolved.

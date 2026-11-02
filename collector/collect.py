@@ -18,6 +18,7 @@ from telethon.errors import FloodWaitError
 from report_parser import ReportError, normalize_name, parse_report
 from topics import matches_topic
 from roster import select_roster
+from progress import Progress, incremental_messages, stream_key
 
 
 class CollectorError(RuntimeError):
@@ -45,7 +46,7 @@ def database(method: str, table: str, filters: dict | None = None, payload: dict
         raise CollectorError("Database connection failed; retry the same scan") from None
 
 
-def load_configuration(path: str, mapped_team: bool = False):
+def load_configuration(path: str, mapped_team: bool = True):
     config = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     approved = json.loads(Path(__file__).with_name("config.example.json").read_text(encoding="utf-8-sig"))["team_names"]
     config["team_names"] = select_roster(config["team_names"], approved, mapped_team)
@@ -89,7 +90,7 @@ def persist_report(row: dict):
     return True
 
 
-async def scan(client: TelegramClient, config: dict, since: date):
+async def scan(client: TelegramClient, config: dict, since: date, progress: Progress, rescan: bool = False):
     # Resolve only explicitly configured group IDs. Other dialog contents are never read.
     dialogs = await client.get_dialogs()
     entities = {utils.get_peer_id(dialog.entity): dialog.entity for dialog in dialogs}
@@ -105,6 +106,7 @@ async def scan(client: TelegramClient, config: dict, since: date):
             print(f"Roster mapping needed: {name}. This name will be skipped; no account is inferred.", flush=True)
     stores_by_name = {normalize_name(store["name"]): store for store in store_rows}
     imported, unchanged, unmapped, issues = 0, 0, 0, 0
+    coverage = {normalize_name(name): {"imported": 0, "unchanged": 0, "issues": 0, "dates": set()} for name in config["team_names"]}
     for store in config["stores"]:
         first_work_date = None
         last_work_date = None
@@ -116,37 +118,68 @@ async def scan(client: TelegramClient, config: dict, since: date):
         zone = ZoneInfo(store["timezone"])
         # Include the first report date after the selected work date. Scan by original sent time, not edit time.
         earliest = datetime.combine(since + timedelta(days=1), time.min, tzinfo=zone)
-        async for message in client.iter_messages(entity, limit=None):
+        identities = [(normalize_name(name), people_by_name.get(normalize_name(name), {}).get("user_id")) for name in config["team_names"]]
+        stream = stream_key(os.environ["SUPABASE_URL"], {**store, "database_store_id": database_store["id"]}, since.isoformat(), identities)
+        print(f"{store['name']}: saved message {progress.cursor(stream)}, {len(progress.pending(stream))} pending retries.", flush=True)
+        async for message in incremental_messages(client, entity, progress, stream, earliest, rescan):
             if message.date < earliest:
-                break
+                progress.record(stream, message.id, False)
+                continue
             if not matches_topic(message, store.get("topic")):
+                progress.record(stream, message.id, False)
                 continue
             if message.sender_id != store["sender_id"] or not message.raw_text:
+                progress.record(stream, message.id, False)
                 continue
             try:
                 results = parse_report(message.raw_text, config["team_names"], store["location_names"])
-                work_date = (message.date.astimezone(zone).date() - timedelta(days=1)).isoformat()
-                for result in results:
-                    report_name = result.pop("report_name")
-                    person = people_by_name.get(normalize_name(report_name))
-                    if person is None:
-                        unmapped += 1
-                        print(f"Unmapped team member: {report_name}. Link this exact report_name to their account in tracker_people.", flush=True)
-                        continue
-                    row = {**result, "owner_id": person["user_id"], "store_id": database_store["id"], "work_date": work_date,
-                           "source_chat_id": str(store["chat_id"]), "source_message_id": message.id,
-                           "source_sent_at": message.date.astimezone(timezone.utc).isoformat()}
+            except ReportError as error:
+                issues += 1
+                print(f"Source {store['chat_id']}/{message.id}: {error}", flush=True)
+                progress.record(stream, message.id, True)
+                continue
+            message_failed = False
+            work_date = (message.date.astimezone(zone).date() - timedelta(days=1)).isoformat()
+            for result in results:
+                report_name = result.pop("report_name")
+                person = people_by_name.get(normalize_name(report_name))
+                person_coverage = coverage[normalize_name(report_name)]
+                if person is None:
+                    unmapped += 1
+                    message_failed = True
+                    print(f"Unmapped team member: {report_name}. Link this exact report_name to their account in tracker_people.", flush=True)
+                    continue
+                row = {**result, "owner_id": person["user_id"], "store_id": database_store["id"], "work_date": work_date,
+                       "source_chat_id": str(store["chat_id"]), "source_message_id": message.id,
+                       "source_sent_at": message.date.astimezone(timezone.utc).isoformat()}
+                try:
                     inserted = await asyncio.to_thread(persist_report, row)
                     imported += int(inserted)
                     unchanged += int(not inserted)
+                    person_coverage["imported"] += int(inserted)
+                    person_coverage["unchanged"] += int(not inserted)
+                    person_coverage["dates"].add(work_date)
                     first_work_date = min(first_work_date, work_date) if first_work_date else work_date
                     last_work_date = max(last_work_date, work_date) if last_work_date else work_date
-            except (ReportError, CollectorError) as error:
-                issues += 1
-                print(f"Source {store['chat_id']}/{message.id}: {error}", flush=True)
+                except CollectorError as error:
+                    issues += 1
+                    message_failed = True
+                    person_coverage["issues"] += 1
+                    print(f"Source {store['chat_id']}/{message.id}, {report_name}: {error}", flush=True)
+            progress.record(stream, message.id, message_failed)
+        pending_count = len(progress.pending(stream))
+        if pending_count:
+            # Includes unavailable/deleted messages retained in the retry queue.
+            issues += pending_count
+            print(f"{store['name']}: {pending_count} messages remain pending; collection will retry them.", flush=True)
         print(f"{store['name']}: {imported - before_imported} imported, {unchanged - before_unchanged} unchanged, {issues - before_issues} issues. Observed mapped work dates: {first_work_date or 'none'} to {last_work_date or 'none'}. Coverage is not verified.", flush=True)
+    for name in config["team_names"]:
+        person_coverage = coverage[normalize_name(name)]
+        dates = person_coverage["dates"]
+        status = "mapped" if normalize_name(name) in people_by_name else "MAPPING NEEDED"
+        print(f"{name} ({status}): {person_coverage['imported']} imported, {person_coverage['unchanged']} unchanged, {person_coverage['issues']} issues; {len(dates)} observed work dates, {min(dates) if dates else 'none'} to {max(dates) if dates else 'none'}. Coverage is not verified.", flush=True)
     print(f"Scan complete: {imported} imported, {unchanged} unchanged, {unmapped} unmatched account mappings, {issues} issues.", flush=True)
-    return issues
+    return issues + unmapped
 
 
 async def main():
@@ -154,7 +187,11 @@ async def main():
     parser.add_argument("--config", default="collector/config.local.json")
     parser.add_argument("--since", required=True, type=date.fromisoformat, help="Earliest local work date to read (YYYY-MM-DD)")
     parser.add_argument("--watch", action="store_true", help="Repeat scans every 120 seconds while this process stays running")
-    parser.add_argument("--mapped-team", action="store_true", help="Use the approved example roster in memory; import only exact mapped names without changing local source settings")
+    parser.add_argument("--rescan", action="store_true", help="Explicitly reread history from --since to reconcile edits or missing database rows")
+    roster_mode = parser.add_mutually_exclusive_group()
+    roster_mode.add_argument("--mapped-team", dest="mapped_team", action="store_true", help="Use the approved team roster (default); import only exact mapped names")
+    roster_mode.add_argument("--configured-roster", dest="mapped_team", action="store_false", help="Explicitly use only the local config's team_names")
+    parser.set_defaults(mapped_team=True)
     args = parser.parse_args()
     config = load_configuration(args.config, args.mapped_team)
     for variable in ("TELEGRAM_API_ID", "TELEGRAM_API_HASH", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"):
@@ -162,22 +199,32 @@ async def main():
             raise CollectorError(f"Set {variable} in the private process environment")
     session_path = Path(os.environ.get("TELEGRAM_SESSION_PATH", ".secrets/telegram-owner"))
     session_path.parent.mkdir(parents=True, exist_ok=True)
+    progress = Progress(Path(".secrets/collector-progress.sqlite3"))
     client = TelegramClient(str(session_path), int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"])
-    await client.start()
     try:
+        await client.start()
+        rescan = args.rescan
         while True:
             try:
-                issues = await scan(client, config, args.since)
+                issues = await scan(client, config, args.since, progress, rescan)
+                # An explicit reconciliation scan happens once, then watch resumes incrementally.
+                rescan = False
                 if not args.watch:
                     if issues:
-                        raise CollectorError("Some messages need reconciliation; no conflicting totals were overwritten")
+                        raise CollectorError("Some messages or account mappings need reconciliation; no conflicting totals were overwritten")
                     break
                 await asyncio.sleep(120)
             except FloodWaitError as error:
                 if not args.watch:
                     raise CollectorError(f"Telegram requested a wait of {error.seconds} seconds; run again later") from None
                 await asyncio.sleep(error.seconds + 1)
+            except (CollectorError, OSError) as error:
+                if not args.watch:
+                    raise
+                print(f"Collection interrupted: {error}. Retrying from saved progress in 120 seconds.", flush=True)
+                await asyncio.sleep(120)
     finally:
+        progress.close()
         await client.disconnect()
 
 
