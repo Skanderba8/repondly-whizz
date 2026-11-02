@@ -32,22 +32,23 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
     try {
       const client = getSupabaseClient();
       const { data } = client.auth.onAuthStateChange((_event, session) => {
+        if (disposed) return;
         const currentId = ++requestId.current;
         clearTimeout(timer);
-        if (disposed) return;
         hasSession = Boolean(session);
         if (!session) {
           setAccess({ status: "signed-out" });
           return;
         }
-        setAccess((previous) => (previous.status === "ready" || previous.status === "checking") && previous.account.userId === session.user.id
+        const sessionUserId = session.user.id;
+        setAccess((previous) => (previous.status === "ready" || previous.status === "checking") && previous.account.userId === sessionUserId
           ? { status: "checking", account: previous.account } : { status: "loading" });
         // Keep Supabase requests outside the auth callback's lock.
         timer = setTimeout(() => {
           async function loadAccess() {
             try {
               const { data: identity, error: identityError } = await client.auth.getUser();
-              if (identityError || !identity.user || identity.user.id !== session.user.id) {
+              if (identityError || !identity.user || identity.user.id !== sessionUserId) {
                 throw new Error("Identity could not be verified.");
               }
               const { data: membership, error: membershipError } = await client
@@ -72,7 +73,7 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
       unsubscribe = () => data.subscription.unsubscribe();
     } catch {
       // Environment failures remain closed, including during static preview.
-      setAccess({ status: "error" });
+      queueMicrotask(() => { if (!disposed) setAccess({ status: "error" }); });
     }
 
     function revalidate() {
@@ -85,12 +86,15 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
       }
     }
     window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    const accessTimer = window.setInterval(revalidate, 60_000);
     return () => {
       disposed = true;
-      ++requestId.current;
       clearTimeout(timer);
       unsubscribe?.();
       window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+      window.clearInterval(accessTimer);
     };
   }, [revision]);
 

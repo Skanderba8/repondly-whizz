@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ListChecks, MessageSquare, Bike } from "lucide-react";
+import { LayoutDashboard, ListChecks, MessageSquareText, Bike } from "lucide-react";
 import { Tooltip } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/activity/", label: "Activity", icon: ListChecks },
-  { href: "/reviews/", label: "Reviews", icon: MessageSquare },
+  { href: "/reviews/", label: "Reviews", icon: MessageSquareText },
   { href: "/doordash/", label: "DoorDash", icon: Bike },
 ];
 

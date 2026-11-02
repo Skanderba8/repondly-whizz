@@ -13,6 +13,8 @@ const buttonVariants = cva(
           "border border-destructive bg-destructive text-destructive-foreground hover:opacity-90",
         outline:
           "border border-input bg-card text-card-foreground hover:bg-muted active:bg-secondary",
+        delivery:
+          "border border-delivery-border bg-delivery-background text-delivery-foreground hover:bg-delivery-hover active:bg-delivery-hover",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-muted active:bg-accent",
         ghost:
@@ -24,6 +26,7 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
         lg: "min-h-11 px-6 py-2",
+        daily: "min-h-14 px-6 py-3 text-base [&_svg:not([class*='size-'])]:size-5",
         icon: "size-11",
         "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",

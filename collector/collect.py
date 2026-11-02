@@ -17,6 +17,7 @@ from telethon.errors import FloodWaitError
 
 from report_parser import ReportError, normalize_name, parse_report
 from topics import matches_topic
+from roster import select_roster
 
 
 class CollectorError(RuntimeError):
@@ -44,8 +45,10 @@ def database(method: str, table: str, filters: dict | None = None, payload: dict
         raise CollectorError("Database connection failed; retry the same scan") from None
 
 
-def load_configuration(path: str):
+def load_configuration(path: str, mapped_team: bool = False):
     config = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    approved = json.loads(Path(__file__).with_name("config.example.json").read_text(encoding="utf-8-sig"))["team_names"]
+    config["team_names"] = select_roster(config["team_names"], approved, mapped_team)
     names = config["team_names"]
     stores = config["stores"]
     if not names or not all(isinstance(name, str) and name.strip() for name in names):
@@ -95,9 +98,17 @@ async def scan(client: TelegramClient, config: dict, since: date):
     people_by_name = {normalize_name(person["report_name"]): person for person in people}
     if len(people_by_name) != len(people):
         raise CollectorError("Database report names are ambiguous")
+    mapped = [name for name in config["team_names"] if normalize_name(name) in people_by_name]
+    print(f"Roster: {len(mapped)} mapped of {len(config['team_names'])} configured names. Earliest requested work date: {since.isoformat()}.", flush=True)
+    for name in config["team_names"]:
+        if normalize_name(name) not in people_by_name:
+            print(f"Roster mapping needed: {name}. This name will be skipped; no account is inferred.", flush=True)
     stores_by_name = {normalize_name(store["name"]): store for store in store_rows}
     imported, unchanged, unmapped, issues = 0, 0, 0, 0
     for store in config["stores"]:
+        first_work_date = None
+        last_work_date = None
+        before_imported, before_unchanged, before_issues = imported, unchanged, issues
         database_store = stores_by_name.get(normalize_name(store["name"]))
         entity = entities.get(store["chat_id"])
         if not database_store or database_store["timezone"] != store["timezone"] or entity is None:
@@ -128,9 +139,12 @@ async def scan(client: TelegramClient, config: dict, since: date):
                     inserted = await asyncio.to_thread(persist_report, row)
                     imported += int(inserted)
                     unchanged += int(not inserted)
+                    first_work_date = min(first_work_date, work_date) if first_work_date else work_date
+                    last_work_date = max(last_work_date, work_date) if last_work_date else work_date
             except (ReportError, CollectorError) as error:
                 issues += 1
                 print(f"Source {store['chat_id']}/{message.id}: {error}", flush=True)
+        print(f"{store['name']}: {imported - before_imported} imported, {unchanged - before_unchanged} unchanged, {issues - before_issues} issues. Observed mapped work dates: {first_work_date or 'none'} to {last_work_date or 'none'}. Coverage is not verified.", flush=True)
     print(f"Scan complete: {imported} imported, {unchanged} unchanged, {unmapped} unmatched account mappings, {issues} issues.", flush=True)
     return issues
 
@@ -140,8 +154,9 @@ async def main():
     parser.add_argument("--config", default="collector/config.local.json")
     parser.add_argument("--since", required=True, type=date.fromisoformat, help="Earliest local work date to read (YYYY-MM-DD)")
     parser.add_argument("--watch", action="store_true", help="Repeat scans every 120 seconds while this process stays running")
+    parser.add_argument("--mapped-team", action="store_true", help="Use the approved example roster in memory; import only exact mapped names without changing local source settings")
     args = parser.parse_args()
-    config = load_configuration(args.config)
+    config = load_configuration(args.config, args.mapped_team)
     for variable in ("TELEGRAM_API_ID", "TELEGRAM_API_HASH", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"):
         if not os.environ.get(variable):
             raise CollectorError(f"Set {variable} in the private process environment")

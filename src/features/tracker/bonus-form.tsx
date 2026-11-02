@@ -6,6 +6,7 @@ import { WorkspacePanel } from "@/components/workspace-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { doordashSubmissionSchema, reviewSubmissionSchema } from "../../../shared/bonus-schema";
@@ -46,11 +47,8 @@ function BonusForm({ kind }: { kind: Kind }) {
   const selectedDate = date || (store ? localDate(store.timezone) : "");
 
   useEffect(() => {
-    if (!file) { setPreview(""); return; }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    return () => { if (preview) URL.revokeObjectURL(preview); };
+  }, [preview]);
   useEffect(() => { if (error || Object.keys(errors).length) errorSummary.current?.focus(); }, [error, errors]);
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -93,7 +91,7 @@ function BonusForm({ kind }: { kind: Kind }) {
       const id = requestId.current;
       setSaved(`${kind === "review" ? "Review" : "DoorDash subscription"} saved. Reference ${id.slice(0, 8)}.`);
       requestId.current = ""; setUncertain(false);
-      setNote(""); setSubscription(""); setProof(false); setFile(null);
+      setNote(""); setSubscription(""); setProof(false); setFile(null); setPreview("");
       if (fileInput.current) fileInput.current.value = "";
       invalidate();
       formRef.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>(kind === "review" ? "textarea" : "input[name=subscription]")?.focus();
@@ -105,17 +103,17 @@ function BonusForm({ kind }: { kind: Kind }) {
 
   return <WorkspacePanel id={`${kind}-entry-title`} title={kind === "review" ? "Add review" : "Add DoorDash subscription"}>
     <form ref={formRef} onSubmit={save} className="px-4 pb-4 md:px-6 md:pb-6" aria-busy={saving}>
-      <p className="mb-5 text-sm text-muted-foreground">Saving for {person?.display_name}. No manager approval needed.</p>
+      <p className="mb-5 text-sm text-muted-foreground">Saving for {person?.display_name}.</p>
       {error || Object.keys(errors).length ? <div ref={errorSummary} tabIndex={-1} role="alert" className="mb-5 rounded-md border border-destructive p-4 text-sm"><p>{error || "Check the highlighted fields."}</p>{Object.entries(errors).map(([field, message]) => <a key={field} className="mt-2 block text-link underline" href={`#${kind}-${field}`}>{message}</a>)}</div> : null}
       <fieldset disabled={saving || uncertain} className="min-w-0">
         <FieldGroup>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field><FieldLabel htmlFor={`${kind}-store_id`}>Store</FieldLabel><Select id={`${kind}-store_id`} value={storeId} aria-invalid={!!errors.store_id} aria-describedby={errors.store_id ? `${kind}-store-error` : undefined} onChange={(event) => { setStoreId(event.target.value); setDate(""); }}><option value="" disabled>Choose a store</option>{context?.stores.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</Select><FieldError id={`${kind}-store-error`}>{errors.store_id}</FieldError></Field>
-            <Field><FieldLabel htmlFor={`${kind}-work_date`}>Work date</FieldLabel><Input id={`${kind}-work_date`} type="date" value={selectedDate} aria-invalid={!!errors.work_date} aria-describedby={`${kind}-date-help`} onChange={(event) => setDate(event.target.value)} /><FieldDescription id={`${kind}-date-help`}>{errors.work_date || (store ? `Store time: ${store.timezone}. Change the date for an earlier shift.` : "Choose the store first.")}</FieldDescription></Field>
+            <Field><FieldLabel htmlFor={`${kind}-store_id`}>Store</FieldLabel><Select id={`${kind}-store_id`} value={storeId} placeholder="Choose a store" aria-invalid={!!errors.store_id} aria-describedby={errors.store_id ? `${kind}-store-error` : undefined} onValueChange={(value) => { setStoreId(value); setDate(""); }} options={(context?.stores ?? []).map((row) => ({ value: row.id, label: row.name }))} /><FieldError id={`${kind}-store-error`}>{errors.store_id}</FieldError></Field>
+            <Field><FieldLabel htmlFor={`${kind}-work_date`}>Work date</FieldLabel><DatePicker id={`${kind}-work_date`} label="Work date" today={localDate(store?.timezone ?? "America/New_York")} required value={selectedDate} aria-invalid={!!errors.work_date} aria-describedby={`${kind}-date-help`} onValueChange={setDate} /><FieldDescription id={`${kind}-date-help`}>{errors.work_date || (store ? `Store time: ${store.timezone}. Change the date for an earlier shift.` : "Choose the store first.")}</FieldDescription></Field>
           </div>
           {kind === "review" ? <>
             <Field><FieldLabel htmlFor="review-note">Note <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel><Textarea id="review-note" value={note} maxLength={4000} aria-invalid={!!errors.note} onChange={(event) => setNote(event.target.value)} placeholder="Anything you need to remember" /><FieldError>{errors.note}</FieldError></Field>
-            <Field><FieldLabel htmlFor="review-screenshot">Screenshot</FieldLabel><Input ref={fileInput} id="review-screenshot" type="file" accept="image/png,image/jpeg,image/webp" aria-invalid={!!errors.screenshot} aria-describedby="review-screenshot-help" disabled={!limit} onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><FieldDescription id="review-screenshot-help">{limit ? `One PNG, JPEG, or WebP, up to ${(limit / 1024 / 1024).toLocaleString()} MB. Remove unrelated customer information before uploading.` : "Screenshot uploads need an owner-configured size limit before reviews can be saved."}</FieldDescription><FieldError>{errors.screenshot}</FieldError>{preview ? <div className="flex items-center gap-4"><img src={preview} alt="Selected review screenshot" className="size-16 rounded-md border object-contain" /><span className="min-w-0 break-words text-xs text-muted-foreground">{file?.name} · Selected</span></div> : null}</Field>
+            <Field><FieldLabel htmlFor="review-screenshot">Screenshot</FieldLabel><Input ref={fileInput} id="review-screenshot" type="file" accept="image/png,image/jpeg,image/webp" aria-invalid={!!errors.screenshot} aria-describedby="review-screenshot-help" disabled={!limit} onChange={(event) => { const selected = event.target.files?.[0] ?? null; setFile(selected); setPreview(selected ? URL.createObjectURL(selected) : ""); }} /><FieldDescription id="review-screenshot-help">{limit ? `One PNG, JPEG, or WebP, up to ${(limit / 1024 / 1024).toLocaleString()} MB. Remove unrelated customer information before uploading.` : "Screenshot uploads need an owner-configured size limit before reviews can be saved."}</FieldDescription><FieldError>{errors.screenshot}</FieldError>{preview ? <div className="flex items-center gap-4"><img src={preview} alt="Selected review screenshot" className="size-16 rounded-md border object-contain" /><span className="min-w-0 break-words text-xs text-muted-foreground">{file?.name} · Selected</span></div> : null}</Field>
           </> : <>
             <Field><FieldLabel htmlFor="doordash-subscription_number">Subscription number</FieldLabel><Input id="doordash-subscription_number" name="subscription" value={subscription} maxLength={120} autoComplete="off" aria-invalid={!!errors.subscription_number} onChange={(event) => setSubscription(event.target.value)} /><FieldError>{errors.subscription_number}</FieldError></Field>
             <label className="flex min-h-11 w-fit cursor-pointer items-center gap-3 text-sm"><input type="checkbox" checked={proof} onChange={(event) => setProof(event.target.checked)} className="size-5 accent-link" />DD proof added</label>
@@ -127,3 +125,5 @@ function BonusForm({ kind }: { kind: Kind }) {
     </form>
   </WorkspacePanel>;
 }
+
+

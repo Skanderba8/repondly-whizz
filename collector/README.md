@@ -39,3 +39,35 @@ Chicago and Washington DC use `"topic": "general"`. The collector scans group hi
 Prepared parser coverage uses synthetic names and values. Nothing has been executed. Live group access, sender IDs, matching, midnight/DST boundaries, late reports, duplicates/edits, authorization, and owner sample totals all require verification before live use.
 
 References: [Telethon account sign-in](https://docs.telethon.dev/en/stable/basic/signing-in.html), [session files](https://docs.telethon.dev/en/stable/concepts/sessions.html).
+
+## July history and mapped-team mode
+
+The owner authorized July 1, 2026 onward collection for the approved team roster with confirmed account mappings. Use:
+
+```text
+python collector/collect.py --config collector/config.local.json --since 2026-07-01 --mapped-team
+```
+
+`--mapped-team` selects `config.example.json`'s approved names in memory. It does not rewrite config.local.json, source IDs, topic choices, aliases, or saved own-only settings. Existing commands without this flag continue using the local allowlist. The collector prints mapping coverage before scanning, skips unknown account mappings without guessing, and prints observed mapped work dates and issue counts for each store. Those ranges describe observed records, not proof that every shift or source message was collected. Existing source identities and person/store/day constraints still prevent duplicate imports; edited/conflicting reports require reconciliation.
+
+Use the same command with `--watch` for continuing 120-second scans. The dashboard's 60-second background refresh reads Supabase only and cannot replace the collector. Exact account mappings keep the employee report identity and the separately named manager tracker independent. No historical scan or local configuration changes were executed by the agent.
+
+## Windows launcher and verified environment
+
+Use the repository's Python environment rather than a global `python` command. The project's `.venv` already contains Telethon 1.45.0 and tzdata 2026.6. From the repository root:
+
+```powershell
+.\collector\run.ps1 --config collector/config.local.json --since 2026-07-01 --mapped-team
+```
+
+Equivalent explicit interpreter:
+
+```powershell
+.\.venv\Scripts\python.exe collector/collect.py --config collector/config.local.json --since 2026-07-01 --mapped-team
+```
+
+For a fresh machine, create `.venv` using an installed Python and run `.\.venv\Scripts\python.exe -m pip install -r collector/requirements.txt`. The launcher never installs packages or changes the user's environment automatically. Credentials still belong in the current terminal's private environment; `--help` validates imports and CLI setup without reading Telegram or Supabase.
+
+## Verification run: 2026-11-02
+
+Owner-authorized checks executed: Python 3.14.7 project environment, Telethon 1.45.0, tzdata 2026.6, launcher --help, and 11 parser/roster/topic tests all passed. A global python command is a different interpreter and need not contain project dependencies. No Telegram sign-in, messages, reports, or live Supabase writes were performed during verification.

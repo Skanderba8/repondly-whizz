@@ -85,3 +85,63 @@ Prepared, not executed: synthetic parser cases and Sunday/Saturday/calendar-mont
 - Personal collector sender/group filtering, no Telegram writes, identical repeat imports, edited/conflicting daily reports, interrupted scans, and reported partial coverage. Reports more than one day late may require explicit owner reconciliation.
 
 No migration, function deployment, install, type/lint/build/unit/integration/browser check, dev server, diff check, or inline check was executed by the agent. Do not treat this delivery as production-ready or a completed milestone until owner verification and unresolved release rules are satisfied.
+
+## Personal and manager dashboard setup
+
+The dashboard delivery adds `migrations/202611020003_tracker_dashboard.sql`. Apply it in the trusted SQL Editor after the existing membership and bonus-tracker migrations. It adds only a read-only aggregate function, using the caller's existing RLS permissions. It does not change roles, data, storage policies, or collection settings.
+
+For the owner's separate manager account (`baskander5@gmail.com`), run `configure-owner.sql` in the trusted SQL Editor. It assigns manager access and creates an independent profile labeled `Skander Abdallah Ben (Manager)`. The employee account (`virtual-agent7@rentwhizz.com`) keeps its original `Skander Abdallah Ben` report name and all existing reports. These accounts are treated as separate people: no ownership, points, bonus entries, or profile settings are transferred or combined as one person. Both remain separate rows in team aggregates. New reviews and DoorDash entries belong to whichever account is signed in. Existing profiles are preserved on rerun. This script has not been executed by the agent. Use Reload setup, or log out and back in if the role needs refreshing.
+
+Both managers and employees open their own weekly Overview automatically. Managers can switch to Team overview or choose an individual member. Managers are included in aggregates like any other mapped person; logging a review or DoorDash entry always uses the signed-in author. Weekly/monthly/all-time summary points are separate from the selected-period chart and dollar bonuses. All-time means all imported reports, not a claim that source collection covers the person's full employment.
+
+Map every other team member and the actual manager using the existing explicit membership/profile process. Use each account's confirmed UUID and report name, assigning `manager` to the actual manager as well. A manager still needs a tracker profile even if they have no productivity reports. The team table contains only mapped profiles and cannot discover missing roster accounts. The current local collector's own-only restriction was not changed; expand collection only after the intended account/name mappings and team scope are configured. This UI change neither runs collection nor backfills history.
+
+Owner verification, prepared but not executed:
+
+- The confirmed owner account enters Overview after setup and appears once in Team overview with the same personal totals. A second mapped manager gets the same team visibility and retains their own submission identity.
+- Employee RPC/API calls expose only their own aggregates, reports, bonuses, and evidence. Manager calls expose mapped team data. Signed-out and unassigned accounts cannot invoke dashboard reads. Role removal or downgrade protects prior manager data.
+- Weekly Sunday/Saturday, month/year boundaries, home-store/calendar defaults, selected-period versus current-period summary labels, and all-imported-history totals reconcile with synthetic reports, including zero-point reports, no reports, missing revenue, and missing category fields.
+- Team totals reconcile with member totals. Missing member reports and partial RTF totals remain labeled. Category counts never become points. Review/DoorDash estimates remain separate from point value.
+- Day/week/month controls, previous/next/Today, member selection and View drill-down, keyboard/typeahead/focus behavior, chart data disclosure, narrow screens, horizontal scrolling, light/dark appearance, and 200% zoom work as intended.
+- Focus refresh and saves update data quietly. Failed analytics/history reads preserve only the matching view's successful results with an inline retry. Missing dashboard migration shows the analytics setup failure while personal history remains usable. Logout/account changes clear private caches and drafts.
+
+No checks, server, browser, migration, live-data access, deployment, or collector run was executed for this delivery.
+
+## Accurate reporting delivery: 2026-11-02
+
+This section supersedes the fixed weekly/monthly/all-time dashboard layout above. Apply `migrations/202611020004_accurate_reporting.sql` in the trusted Supabase SQL Editor after the existing migrations. This introduces `tracker_reporting(p_owner, p_start, p_end, p_bucket)` with invoker rights. A null owner means manager-only team scope. The existing snapshot RPC keeps its signature, supports the longer range and manager-only null-owner history, and adds author identity fields to history rows. No ownership, stored reports, profile mappings, rates, or storage permissions are changed.
+
+1. Run `reconcile-employee-reporting.sql` read-only in the SQL Editor. Its first result separates the two accounts' all-imported and since-July totals. The next results show monthly counts/sums/RTF data and every employee source row with a running total. Compare the displayed 246 to the actual matching account and range; do not adjust totals or merge identities to force a different number. A 246 total in a synthetic test is not verification of the live employee total.
+2. Apply migration 004. The UI defaults to month-to-date and all reporting sections use the visible inclusive range. Weekly presets are Sunday through today; prior months use full calendar boundaries. Custom changes require Apply. Daily/weekly/monthly chart buckets are chosen at 31/180-day inclusive thresholds and boundary buckets are clipped. Custom ranges are bounded to a 3,660-day difference as a technical resource guard.
+3. Confirm other team account mappings before collection. From the repository root, in the existing collector environment with credentials already configured, run:
+
+```text
+python collector/collect.py --config collector/config.local.json --since 2026-07-01 --mapped-team
+```
+
+This command uses the approved example roster in memory and preserves the local source IDs, topic filters, aliases, and own-only saved settings. Only exact mapped roster names receive imports. Inspect startup mapping diagnostics, per-store observed date ranges, and the final imported/unchanged/unmapped/issue counts. Fix missing mappings or source conflicts through the established owner process, then rerun the same command safely. No conflicting source totals are overwritten. The separate manager identity remains independent and receives no employee reports through name similarity.
+4. For ongoing collection, add `--watch` to that command. The owner-run collector scans every 120 seconds; the visible app refreshes data every 60 seconds. An app refresh cannot fetch Telegram history or prove that collection is complete. Keep the trusted collector running on the authorized machine for continuing imports.
+5. Return to the app and select Since July 2026 or View available history. Reconcile selected-period points, point value, RTF commission, reviews, DoorDash, total estimated earnings, category values, and source records against the SQL results. Month-to-date may legitimately have no reports when no source work dates fall in it; available-history dates make that distinction visible.
+
+Estimated earnings combine dollar components, not points and dollars in one points total. Missing RTF revenue produces partial known amounts; no reports do not establish zero productivity. Existing fractional-cent commission precision is preserved, with display precision up to four dollar decimal places. Historical rates are fixed for July 2026 onward under D29; no payout confirmation is implied.
+
+Prepared coverage, not executed: `tests/unit/reporting.test.ts` covers preset boundaries, invalid/custom ranges, adaptive buckets, availability fallback, comparative rescaling, and crown ties/zeroes. `collector/test_roster.py` covers approved-team selection, unchanged own-only mode, and ambiguous names. `test-accurate-reporting.sql` is an owner-run staging integration fixture that rolls back synthetic Auth/profile/report/bonus rows and checks numeric reconciliation, RTF missingness, long-range history, clipped buckets, independent manager data, employee denial, and manager visibility.
+
+Owner manual verification also covers reversed custom dates and Apply behavior, chart sliders/data tables/mobile scroll, dark mode and keyboard focus, source author labels in team history, data migration failures, correct partial/unavailable states, save-triggered updates, retained file-picker drafts, hidden-tab polling, failed refresh recovery, and role removal/account switching. No server, tests/checks, browser, hosted SQL, live data access, collection, or deployment were run by the agent.
+
+
+## Executed verification: 2026-11-02
+
+Owner explicitly authorized running verification. Fixed the auth callback's nullable session capture, request-state/pagination effect updates, persistent appearance subscription, screenshot preview URL lifecycle, and evidence retry cleanup. Updated stale signed-out heading assertions and added synthetic authenticated dashboard browser coverage. The Windows launcher selects the existing project `.venv`, where Telethon and timezone data are installed; `--help` passed without a live connection.
+
+Executed results: 15 frontend unit tests passed; 11 Python parser/roster/topic tests passed; production static build passed with font-download network access; desktop/mobile Playwright passed all 6 tests on the production preview at http://127.0.0.1:4173. The dashboard browser fixture intercepts provider traffic and verifies chart rendering, explicit date application, reversed-date validation, weekly grouping requests, comparison selection/crowns, retained dates on refresh, page identity, and no JavaScript page errors. Desktop/mobile screenshots were inspected; long category tables intentionally scroll horizontally on mobile. Browser plugin was unavailable, so regular Playwright was used.
+
+Migrations 001-004 and test-accurate-reporting.sql were executed successfully in a temporary in-memory PGlite PostgreSQL engine outside the repository, with minimal Auth/storage platform stubs. Numeric earnings, report sums, clipped long-range buckets, source history, employee denial, separate manager identity, manager visibility, and signed-out denial passed. This exercises database policies and SQL in a local PostgreSQL engine; it is not verification of the hosted Supabase Auth/storage services or live records. The fixture's 246 points are synthetic.
+
+The existing reconcile-employee.sql contained pasted Overview text rather than SQL and was preserved. Use reconcile-employee-reporting.sql for executable read-only diagnostics; it also executed successfully locally. The pasted Overview states that available work dates were October 26-30, explaining an empty November selection, but the actual live source rows and July backfill remain unverified. No hosted migration/query, credential entry, real Telegram import, account linking, or deployment was performed.
+
+## Confirmed team onboarding
+
+The owner supplied 11 exact report-name/account-number pairs under D33. Run `configure-team.sql` in the trusted Supabase SQL Editor after the membership/tracker migrations. Auth accounts must already exist with the confirmed virtual-agent<number>@rentwhizz.com emails. The script resolves their UUIDs, stops on any missing/ambiguous account or conflicting existing profile, creates absent employee memberships, preserves existing roles and home stores, and returns the 11 mapped profiles. It does not create users, move records, merge identities, or touch the separate baskander5 manager account. Chams Eddine Amaima has no confirmed account number and is intentionally excluded.
+
+After applying, use Reload setup or sign out/in if a new role was assigned, then rerun the Windows collector launcher with --since 2026-07-01 --mapped-team. Existing reports are skipped idempotently; newly mapped report identities can now import. Source/parsing conflicts from the prior scan remain separate reconciliation items. This setup script was prepared but not executed by the agent; no checks or collector run for this change.

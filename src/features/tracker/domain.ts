@@ -9,6 +9,7 @@ export const historySchema = z.object({
   subscription_number: z.string().nullable(), dd_proof_added: z.boolean().nullable(),
   screenshot_path: z.string().nullable(), recorded_at: z.string(), source_sent_at: z.string().nullable(),
   activity: z.record(z.string(), z.number().nullable()).nullable(), rtf_revenue_cents: z.number().nullable(),
+  owner_id: z.uuid().optional(), display_name: z.string().optional(),
 });
 export const snapshotSchema = z.object({
   points: z.number().nullable(), report_count: z.number(), commission: z.number().nullable(), commission_missing: z.number(),
@@ -49,4 +50,15 @@ export function dateLabel(date: string) {
 }
 export function money(amount: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(amount);
+}
+
+export function pointsLabel(value: number | null) {
+  return value === null ? "No reports" : new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+}
+
+export function movePeriod(date: string, period: Period, direction: number) {
+  if (period !== "month") return shiftDate(date, direction * (period === "week" ? 7 : 1));
+  const value = new Date(`${date.slice(0, 7)}-01T12:00:00Z`);
+  value.setUTCMonth(value.getUTCMonth() + direction);
+  return value.toISOString().slice(0, 10);
 }
