@@ -6,6 +6,9 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { loginSchema } from "./access";
+import { ArrowRight, LoaderCircle } from "lucide-react";
+import { AccessFrame } from "@/components/access-frame";
+import { Separator } from "@/components/ui/separator";
 
 export function LoginForm() {
   const busy = useRef(false);
@@ -44,11 +47,11 @@ export function LoginForm() {
   }
 
   return (
-    <main id="main-content" className="flex min-h-svh items-center justify-center px-6 py-12">
-      <section aria-labelledby="login-title" className="w-full max-w-sm rounded-2xl border border-border bg-card p-7 sm:p-9">
-        <p className="eyebrow">Whizz Repondly</p>
-        <h1 id="login-title" className="mt-4 text-3xl font-semibold tracking-tight">Welcome back.</h1>
-        <p id="login-help" className="mt-3 text-sm leading-6 text-muted-foreground">Log in with the work email and password provided by your workspace owner.</p>
+    <AccessFrame>
+      <section aria-labelledby="login-title" className="access-panel">
+        <span aria-hidden="true" className="mb-6 block h-1 w-8 rounded-full bg-primary" />
+        <h1 id="login-title" className="page-title">Log in to your workspace</h1>
+        <p id="login-help" className="mt-3 text-sm leading-6 text-muted-foreground">Use the work email and password provided by your workspace owner.</p>
         <form onSubmit={handleSubmit} aria-describedby="login-help" className="mt-8">
           <FieldGroup>
             <Field>
@@ -59,13 +62,14 @@ export function LoginForm() {
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <Input id="password" name="password" type="password" autoComplete="current-password" required readOnly={pending} className="min-h-11" />
             </Field>
-            {error ? <p ref={errorRef} tabIndex={-1} role="alert" className="text-sm text-destructive">{error}</p> : null}
-            <Button type="submit" disabled={pending} className="min-h-11 w-full">{pending ? "Logging in..." : "Log in"}</Button>
+            {error ? <p ref={errorRef} tabIndex={-1} role="alert" className="rounded-md bg-error-background p-3 text-sm text-error-foreground">{error}</p> : null}
+            <Button type="submit" disabled={pending} className="min-h-11 w-full">{pending ? <><LoaderCircle aria-hidden="true" className="animate-spin" />Logging in...</> : <>Log in<ArrowRight aria-hidden="true" data-icon="inline-end" /></>}</Button>
             <span role="status" className="sr-only">{pending ? "Logging in. Please wait." : ""}</span>
           </FieldGroup>
         </form>
-        <p className="mt-6 text-xs leading-5 text-muted-foreground">Need access or help with your password? Contact your workspace owner.</p>
+        <Separator className="my-6" />
+        <p className="text-xs leading-5 text-muted-foreground">Need access or help with your password? Contact your workspace owner.</p>
       </section>
-    </main>
+    </AccessFrame>
   );
 }

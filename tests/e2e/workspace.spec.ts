@@ -1,17 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("workspace navigation works on the exported site and survives refresh", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Good work deserves");
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("main")).toBeFocused();
-  await page.getByRole("navigation", { name: "Workspace" }).getByRole("link", { name: "Activity" }).click();
-  await expect(page).toHaveURL(/\/activity\/$/);
-  await expect(page.getByRole("heading", { name: "Your activity." })).toBeVisible();
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "Your activity." })).toBeVisible();
-  await page.getByRole("link", { name: "Back to overview" }).click();
-  await expect(page.getByRole("navigation").getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
-});
+for (const route of ["/", "/activity/"]) {
+  test(`signed-out access at ${route} shows login after navigation and refresh`, async ({ page }) => {
+    await page.goto(route);
+    await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    await expect(page.getByLabel("Work email")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("autocomplete", "current-password");
+    await expect(page.getByRole("button", { name: "Log in", exact: true })).toBeEnabled();
+    await expect(page.getByRole("navigation", { name: "Workspace" })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+  });
+}

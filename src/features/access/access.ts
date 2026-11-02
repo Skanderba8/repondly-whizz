@@ -10,6 +10,6 @@ export type WorkspaceAccount = {
 };
 
 export const loginSchema = z.object({
-  email: z.email("Enter a valid work email.").trim(),
+  email: z.string().trim().pipe(z.email("Enter a valid work email.")),
   password: z.string().min(1, "Enter your password."),
 });

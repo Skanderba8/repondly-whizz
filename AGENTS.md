@@ -16,6 +16,14 @@
 - Keep secrets and privileged Supabase clients server-only. Never trust browser-supplied identity, role, ownership, or point totals.
 - Keep changes focused. Add dependencies only for a concrete need; document significant tradeoffs.
 
+## UI consistency contract
+- For every UI change, read the relevant section of DESIGN.md and its implementation contract in section 12 before editing. The owner authorized the shared Whizz redesign on 2026-11-02; keep subsequent workflows in that same system.
+- Reuse WorkspaceShell, PageHeading, WorkspacePanel, AccessFrame, and the primitives under src/components/ui. Extend a shared variant when a pattern repeats instead of copying page-specific styles.
+- Consume semantic Tailwind tokens from src/app/globals.css. Define paired light/dark tokens centrally if a new semantic role is necessary. Do not add feature-local hex colors, alternate fonts, gradients, marketing heroes, decorative icon tiles, or unrelated component styles.
+- Keep page titles at the shared scale, controls and focus treatments consistent, one primary action per context, and unavailable states distinct from empty data. Do not add sample scores or inactive workflow controls to make a screen look complete.
+- Keep navigation compact and mounted, use progressive disclosure for details, preserve mobile/keyboard access, and keep noninteractive content server-rendered where possible. Add heavy dependencies only for an approved feature need.
+- Document any intentional new UI pattern in DESIGN.md in the same change. Owner-run visual, interaction, accessibility, and performance verification remains required; do not claim it was executed.
+
 ## Feature workflow
 1. Plan: define user outcome, allowed roles, acceptance criteria, data changes, unknowns, and test cases. Resolve blocking rules with the owner.
 2. Implement: make the smallest complete change, including validation, access policies, loading, empty, and failure states.

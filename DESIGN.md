@@ -14,7 +14,7 @@ Use Linear as a reference for hierarchy, Vercel for spacing discipline, Stripe D
 - M1 is implemented as a foundation awaiting owner verification. Authentication, submissions, performance reporting, and management insights remain future milestones. Designs below must not be presented as already working features.
 - Later confirmed decisions in `DECISIONS.md`, especially D16, explain why the foundation exists despite earlier planning-only wording in the PRD and architecture. This revision does not resolve those documents' status wording or authorize further implementation.
 - Permissions default to denied. A manager label does not establish team scope, evidence access, or correction rights; an admin label does not imply access to performance data.
-- This task changes `DESIGN.md` only. Business questions remain in the existing decision register; do not treat visual choices here as answers to them.
+- The design-document revision originally changed `DESIGN.md` only. The owner subsequently authorized applying this system to existing application screens on 2026-11-02 (D20). Business questions remain in the existing decision register; visual choices do not answer them.
 
 ### Scope matrix
 
@@ -436,3 +436,33 @@ Product-specific practices:
 - Keep touch scrolling, browser zoom, and reduced-motion preferences intact. Never disable zoom or rely on hover to reveal a required action.
 
 The proposed palette, focus treatments, and dark variants require owner verification in rendered screens. No contrast calculation, accessibility audit, browser run, or conformance check has been executed as part of this documentation task.
+
+## 12. Application implementation contract
+
+The 2026-11-02 redesign applies this system to existing surfaces: Overview, Activity, login, access verification, denial/failure, and not-found. This is a UI delivery awaiting owner verification, not completion of reporting or submission milestones. Future changes must preserve these patterns unless the owner explicitly changes the direction.
+
+### Shared implementation map
+
+| Pattern | Source | Usage |
+| --- | --- | --- |
+| Semantic palette, type, geometry, layout | `src/app/globals.css` | Use semantic Tailwind colors; change tokens centrally in paired themes, never feature-local hex values. |
+| Font | `src/app/layout.tsx` | Geist Sans through Next's build-time font pipeline with system fallback. No runtime font CDN. |
+| Branding | `src/components/brand.tsx` | Plain text Whizz/Repondly lockup with lime backing; replace only with an authorized clean asset. |
+| Workspace | `src/components/workspace-shell.tsx`, `workspace-nav.tsx` | Stable shell, context bar, active destination, collapsible sidebar, tablet overlay expansion, modal mobile navigation. |
+| Account and appearance | `src/components/account-menu.tsx`, `appearance-provider.tsx` | Radix keyboard menu, Light/Dark/System radio choices, explicit logout. Only appearance and sidebar preferences are stored by the UI. |
+| Page heading | `src/components/page-heading.tsx` | One H1, concise description, optional permitted action. No eyebrow or marketing hero. |
+| Working panel | `src/components/workspace-panel.tsx` | Named section, shared H2, optional action, open content. Avoid repeated nested bordered panels. |
+| Access screens | `src/components/access-frame.tsx` | Shared brand/header and centered reading width for login, access loading, denial, and recovery. |
+| Controls and states | `src/components/ui` | Button variants, 44 px inputs, field groups, badges, separators, and small icon empty states. Extend shared primitives for repeated needs. |
+
+### Recipes for subsequent workflows
+
+- Start a workspace page with `PageHeading`. Use `WorkspacePanel` for an actual working region, not every individual field. Add at most one lime primary action to the current context.
+- Build forms with `FieldGroup`, `Field`, visible labels, `Input`, help and associated errors. Use approved schema fields only. Keep input at 16 px on touch layouts and retain values after failure. Use the same panel, padding, footer, and pending feedback across record types.
+- Build history as one semantic table on desktop and a compact semantic list on mobile. Use 52 px minimum table rows, end-aligned tabular numbers, a clear detail action, and explicit pagination when a data contract exists. Filters must reflect real supported fields.
+- Use the shared `Empty` composition for genuine no-data and filtered-empty states. An unavailable integration or calculation needs explicit unavailable wording. The foundation intentionally shows no invented scores, periods, charts, activity counts, or success states.
+- Use Radix-backed dialogs/sheets/menus for disclosure. Preserve title semantics, focus containment/restoration, Escape dismissal, and keyboard operation. Keep essential instructions visible outside tooltips. Portal layers follow the tokens and layer scale above.
+- Keep points, dates, counts, and table numbers tabular; use shared type sizes and semantic state badges. Show persistence and business-validation states separately.
+- Keep route content static/server-rendered where appropriate; client islands own appearance, navigation, auth, and actual interactions. Do not add a chart library, state framework, animation library, or request-time Next feature for decoration.
+
+The redesign uses existing dependencies. A generated full-screen concept informed composition only; it is not shipped as a screenshot-based UI or production asset. Palette, navigation responsiveness, focus, menu behavior, first-paint appearance, login/logout, access failure, and layout at 320 px require owner review. No server, build, test, lint, diff, inline, browser, or performance checks were executed under the owner's execution preference. No measured performance or accessibility conformance is claimed.

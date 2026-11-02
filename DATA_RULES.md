@@ -38,3 +38,14 @@ No formula, target, reporting timezone, approval workflow, or peer visibility is
 Use invented names, synthetic IDs, fabricated activities, and generated evidence containing no customer information. Label demo values and provisional UI totals as sample data. Do not encode an invented scoring rule in fixtures or tests; use owner-approved worked examples when scoring is implemented.
 
 Owner answers should include at least one ordinary case and one edge case. Record accepted answers in this document and link the corresponding decision ID in DECISIONS.md before implementing dependent behavior.
+
+## Approved access and review rules: 2026-11-02
+
+See D17-D19 in DECISIONS.md. These decisions partially resolve the register; unresolved details above remain open.
+
+- R01: Two initial roles: employee and manager. Employees view and submit only their own records and may edit their own pending records. Managers view the whole team's performance, subscription/review records, and screenshots and may edit those records. No deletion permission has been approved.
+- R02: The owner creates work-email/password accounts in Supabase and assigns employee or manager access explicitly. Users log in and out; there is no public registration or app password-reset flow. Offboarding, session revocation requirements, ownership, and history handling remain open.
+- R06: Managers may accept or deny submissions; a note is optional for both outcomes. Whether a manager can approve their own record, whether reviewed records may be reopened, and when records earn points remain open.
+- R09: Employees may edit their own pending records. Managers may edit team records. Correction audit requirements, time limits, deletion, post-review transitions, and recalculation remain open.
+
+Only account access and role lookup are implemented in this auth slice. Record editing, evidence access, and review actions need corresponding business schemas and RLS in subsequent milestones.

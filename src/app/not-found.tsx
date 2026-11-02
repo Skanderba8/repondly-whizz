@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PageHeading } from "@/components/page-heading";
 
 export default function NotFound() {
-  return <div className="py-16"><p className="eyebrow">404</p><h1 className="page-title">This page isn't here.</h1><p className="mt-5 text-muted-foreground">Return to your workspace to find your way.</p><Button asChild className="mt-8"><Link href="/">Back to overview</Link></Button></div>;
+  return <div className="flex flex-col items-start gap-6 py-8"><PageHeading title="Page not found" description="This page may have moved, or the address is incorrect." /><Button asChild><Link href="/">Back to overview</Link></Button></div>;
 }

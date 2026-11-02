@@ -6,6 +6,8 @@ import { WorkspaceShell } from "@/components/workspace-shell";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { accessRoleSchema, type WorkspaceAccount } from "./access";
 import { LoginForm } from "./login-form";
+import { LoaderCircle, ShieldCheck, ShieldX, WifiOff } from "lucide-react";
+import { AccessFrame } from "@/components/access-frame";
 
 type AccessState =
   | { status: "loading" | "signed-out" | "denied" | "error" }
@@ -21,6 +23,7 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let disposed = false;
+    let hasSession = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let unsubscribe: (() => void) | undefined;
 
@@ -30,6 +33,7 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
         const currentId = ++requestId.current;
         clearTimeout(timer);
         if (disposed) return;
+        hasSession = Boolean(session);
         if (!session) {
           setAccess({ status: "signed-out" });
           return;
@@ -69,7 +73,7 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
     }
 
     function revalidate() {
-      if (document.visibilityState === "visible" && !logoutBusy.current) {
+      if (hasSession && document.visibilityState === "visible" && !logoutBusy.current) {
         ++requestId.current;
         setAccess({ status: "loading" });
         setRevision((value) => value + 1);
@@ -103,6 +107,7 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setAccess({ status: "signed-out" });
     } catch {
+      ++requestId.current;
       setLogoutError("Logout could not be completed. Check your connection and try again.");
       setAccess({ status: "error" });
     } finally {
@@ -112,23 +117,23 @@ export function AuthBoundary({ children }: { children: React.ReactNode }) {
   }
 
   if (signingOut || access.status === "loading") {
-    return <main className="flex min-h-svh items-center justify-center px-6"><p role="status" className="text-sm text-muted-foreground">{signingOut ? "Logging out..." : "Checking workspace access..."}</p></main>;
+    return <AccessFrame><section aria-labelledby="access-loading-title" className="access-panel"><ShieldCheck aria-hidden="true" className="mb-6 size-6 text-muted-foreground" /><h1 id="access-loading-title" className="section-title">{signingOut ? "Leaving your workspace" : "Opening your workspace"}</h1><p role="status" className="mt-3 flex items-center gap-3 text-sm text-muted-foreground"><LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin" />{signingOut ? "Logging out..." : "Checking workspace access..."}</p></section></AccessFrame>;
   }
   if (access.status === "signed-out") return <LoginForm />;
   if (access.status === "ready") {
     return <WorkspaceShell account={access.account} onSignOut={signOut}>{children}</WorkspaceShell>;
   }
   return (
-    <main className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-5 px-6 py-12">
-      <p className="eyebrow">Whizz Repondly</p>
-      <h1 className="text-2xl font-semibold">{access.status === "denied" ? "Workspace access needed" : "Unable to verify access"}</h1>
-      <p role="alert" className="text-sm leading-6 text-muted-foreground">{logoutError || (access.status === "denied"
+    <AccessFrame><section aria-labelledby="access-error-title" className="access-panel">
+      {access.status === "denied" ? <ShieldX aria-hidden="true" className="mb-6 size-6 text-muted-foreground" /> : <WifiOff aria-hidden="true" className="mb-6 size-6 text-muted-foreground" />}
+      <h1 id="access-error-title" className="page-title">{access.status === "denied" ? "Workspace access needed" : "Unable to verify access"}</h1>
+      <p role="alert" className="mt-3 text-sm leading-6 text-muted-foreground">{logoutError || (access.status === "denied"
         ? "Your account has no workspace role assigned. Contact your workspace owner."
         : "Check your connection and try again. If this continues, contact your workspace owner.")}</p>
-      <div className="flex gap-3">
+      <div className="mt-6 flex flex-wrap gap-3">
         <Button onClick={retry} className="min-h-11">Try again</Button>
         <Button variant="outline" onClick={signOut} className="min-h-11">Log out</Button>
       </div>
-    </main>
+    </section></AccessFrame>
   );
 }
