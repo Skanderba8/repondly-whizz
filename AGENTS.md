@@ -2,7 +2,7 @@
 
 ## Scope and source of truth
 - Read only the documents and files needed for the task. Ask when required context is missing.
-- Project setup and planning are authorized. Application code, dependency installation, and service provisioning require the owner's next approval.
+- The owner authorized M1 application foundation and dependency installation on 2026-11-02. Business features follow the roadmap; merge, deployment, and service provisioning require authorization for those actions.
 - Use PRD.md for scope, DATA_RULES.md for business rules, ARCHITECTURE.md for boundaries, and ROADMAP.md for status.
 - Never silently turn an unresolved rule into application behavior. Record decisions in DECISIONS.md.
 - Use anonymized, synthetic data until real-data access is explicitly authorized.

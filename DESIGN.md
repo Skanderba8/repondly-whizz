@@ -1,23 +1,438 @@
-# Product and UI direction
+# Whizz Repondly design system
 
-## Character
-A premium, calm performance workspace with an editorial feel: clear typography, deliberate spacing, restrained color, and precise data presentation. Whizz Repondly is the working product name; brand assets are not yet approved.
+Design specification revised 2026-11-02. Scope: a private performance workspace for approximately 12 support employees and their manager. This document defines the intended visual system, not completed application behavior or authorization to build new features.
 
-Avoid interchangeable dashboard cards, rainbow metrics, decorative gradients, excessive rounded containers, and charts without a useful question. Do not imply a leaderboard or competition model before business approval.
+## 1. Direction and product boundaries
 
-## Composition
-- Employee view: prioritize the selected period, points with calculation context, meaningful activity, and quick submission access.
-- Management view: prioritize agreed team outcomes, period comparison, and drill-down to source records. Any targets or rankings need approval.
-- Use a strong page hierarchy and fewer well-composed sections. Use tables for comparable records and charts only for trends worth inspecting.
-- Provisional visual direction: warm neutral canvas, dark ink text, one controlled accent, tabular numerals, subtle borders, and limited elevation. Confirm a representative screen before broad UI implementation.
-- Define semantic Tailwind tokens for color, type, spacing, radius, and focus. Customize shadcn/ui consistently rather than accepting an unstyled default appearance.
+Whizz Repondly should feel precise, energetic, and calm: premium analytics with Whizz's electric lime identity, confident dark typography, white surfaces, and generous working space. The signature is a strong points figure, a fine lime accent, and a disciplined arrangement of supporting information. Most of the screen stays neutral.
 
-## Quality bar
-- Responsive layouts for small phones through desktop; tables remain readable with intentional mobile alternatives or labeled horizontal scrolling.
-- Target WCAG 2.2 AA: keyboard operation, visible focus, semantic structure, labeled controls, adequate contrast, and accessible validation messages.
-- Do not rely on color alone. Give charts textual summaries and clearly label units, dates, period boundaries, and timezones.
-- Cover loading, first-use empty, filtered empty, partial failure, permission denial, validation, success, and retry states.
-- Keep motion restrained and honor reduced-motion settings. Confirm destructive actions and explain effects in plain language.
-- Show evidence previews only to authorized users. Avoid customer details in decorative samples.
+Use Linear as a reference for hierarchy, Vercel for spacing discipline, Stripe Dashboard for metric clarity, and Raycast for compact navigation and immediate feedback. These are qualities to pursue, not layouts or assets to copy. No gradients, glass effects, decorative illustrations, emoji UI, glowing charts, or oversized marketing headings.
 
-Visual review uses synthetic data, including long names, missing evidence, large totals, and empty periods. Owner review of one employee screen and one management screen is required before expanding the visual system.
+### Source of truth and implementation status
+
+- `PRD.md` controls product scope, `DATA_RULES.md` controls business rules, `ARCHITECTURE.md` controls technical boundaries, and `ROADMAP.md` controls implementation status. This document controls visual presentation only.
+- M1 is implemented as a foundation awaiting owner verification. Authentication, submissions, performance reporting, and management insights remain future milestones. Designs below must not be presented as already working features.
+- Later confirmed decisions in `DECISIONS.md`, especially D16, explain why the foundation exists despite earlier planning-only wording in the PRD and architecture. This revision does not resolve those documents' status wording or authorize further implementation.
+- Permissions default to denied. A manager label does not establish team scope, evidence access, or correction rights; an admin label does not imply access to performance data.
+- This task changes `DESIGN.md` only. Business questions remain in the existing decision register; do not treat visual choices here as answers to them.
+
+### Scope matrix
+
+| Experience | Design treatment | Delivery gate |
+| --- | --- | --- |
+| Private invitation and sign-in | Required first-release flow; no public signup | M2/M3, R01/R02, approved onboarding and recovery method |
+| Subscription and review logging with protected evidence | Required first-release flow; fields and evidence rules unresolved | M4/M5, R03-R07/R09/R11 |
+| Personal daily, weekly, monthly points and history | Required first-release flow; no invented formulas | M6/M7, R07-R09 |
+| Team summaries and employee drill-down | Required management direction; exact metrics and scope unresolved | M8, R01/R10 |
+| Administrative access management | Intended admin capability; no default performance access | M2/M3, R01/R02 |
+| Historical comparisons, category breakdowns, activity counts | Conditional analytics within approved reporting contracts | R07-R10; approved definitions and comparable data |
+| Leaderboards, medals, peer comparisons | Conditional design only; omit from initial navigation | R01/R10, ranking metric, ties, eligibility, audience |
+| Personal bests, weekly achievements, goals, streaks | Conditional design only; no new scoring or targets | Explicit owner approval and reliable eligibility/history rules |
+| Approval queues and approve/reject controls | Conditional design only | R01/R06/R09 |
+| Telegram report ingestion and imported report history | Later phase only | M10, R12 |
+| Notifications, exports, global search, billing, payroll | Not part of the initial UI; no placeholder controls | Separate scope approval; exports also depend on R10 |
+
+Do not show disabled navigation teasers for unapproved features. In a synthetic foundation preview, label data clearly as sample and identify unavailable capabilities. In production, ship only approved capabilities and distinguish genuine no-data states from unavailable calculations.
+
+### Design principles
+
+1. Make the next useful action obvious. Each page has one main purpose and normally one lime primary action.
+2. Establish hierarchy with size, spacing, and alignment before adding color or cards.
+3. Show the period, units, source context, and freshness alongside results. An attractive number without a reliable definition is not a KPI.
+4. Use progressive disclosure: a summary leads to a trend, then records, then authorized evidence and correction details.
+5. Keep performance encouraging and factual. Do not invent targets, shame lower results, or imply that activity volume measures all aspects of work.
+6. Keep the system small. Reuse a few component variants, one shell, and one reporting-period pattern.
+
+## 2. Screenshot inspiration and deliberate improvements
+
+The two owner-supplied Whizz ERP screenshots are visual references only. Their operational content, customer information, assets, identifiers, and workflows must not be copied into fixtures, documentation examples, or Repondly features. No screenshot files are added to the repository.
+
+| Observed in the references | Preserve | Refine for Repondly |
+| --- | --- | --- |
+| Electric lime logo treatment and primary action pills | Recognizable lime action accent and near-black lettering | Reserve solid lime for small actions and meaningful highlights; never a full dashboard background |
+| White modules on a light-gray workspace | Clear separation between canvas and working surfaces | Use a lighter, slightly green-neutral canvas and fewer enclosing panels |
+| Bold dark section titles and compact line icons | Confident headings and functional iconography | Increase body legibility and use a consistent type scale and icon stroke |
+| Rounded corners, pale green status strips, pastel badges | Friendly geometry and soft semantic states | Use one status vocabulary, compact badges, and restrained tint coverage |
+| First screenshot: narrow sidebar, broad main work area, secondary detail column, collapsible sections | Stable navigation and summary-to-detail relationships | Two clear content levels; details in a sheet or dedicated view rather than repeated nested cards |
+| First screenshot: dense table, small metadata, several competing action colors | Aligned tabular information and visible actions | Readable rows, one primary action, neutral secondary actions, metadata disclosed on demand |
+| Second screenshot: three dense columns with financial summaries and a chronological activity column | Strong numerical alignment and traceable activity | One dominant metric region, one main visualization, and a quieter history section |
+| Second screenshot: multiple blue, purple, green, and red panels | Color as a cue when it has meaning | Neutral panels; distinct semantic status colors; stable chart-series colors only |
+| Both: crowded icon toolbars and tightly packed content | Fast access to relevant tasks | At most one primary action and two visible secondary actions; move rare actions into a labeled menu |
+
+The palette below is an intentional design selection informed by the screenshots, not a claim of exact color sampling or official brand tokens. Use `#C4FF4D` as the Repondly brand lime. Preserve the real Whizz logo only when a clean, authorized asset is available; do not crop the ERP screenshot or reconstruct the logo. Until then, use a plain text brand lockup, not an invented brand mark.
+
+The previous design document lacked concrete tokens, a dark theme, component geometry, page blueprints, and workflow states. This specification supplies them. It also reconciles the requested long sidebar with the architecture's compact navigation and explicitly separates proposed analytics from approved business behavior.
+
+## 3. Color and theme tokens
+
+Token names are the implementation contract. Values are opaque colors unless noted. Consume semantic tokens through Tailwind and shared primitives; do not scatter hex values through feature components.
+
+### Core palette
+
+| Semantic token | Light | Dark | Intended use |
+| --- | --- | --- | --- |
+| `background` | `#F6F7F5` | `#111411` | Application canvas |
+| `foreground` | `#181A1B` | `#F3F5F0` | Primary text |
+| `card`, `popover` | `#FFFFFF` | `#1A1F1A` | Content panels, dialogs, menus |
+| `card-foreground`, `popover-foreground` | `#181A1B` | `#F3F5F0` | Text on those surfaces |
+| `muted` | `#EFF2EC` | `#242B24` | Quiet inset, hover surface, skeleton base |
+| `muted-foreground` | `#5F685F` | `#ADB7AA` | Secondary text, chart axes, captions |
+| `subtle-foreground` | `#687267` | `#99A594` | Tertiary metadata; never essential text at reduced opacity |
+| `border` | `#E2E7DE` | `#354035` | Decorative dividers and panel edges |
+| `input` | `#7A8378` | `#74816F` | Essential control boundary, checkbox outline |
+| `primary`, `brand` | `#C4FF4D` | `#C4FF4D` | Primary action and small brand accents |
+| `primary-foreground` | `#17191A` | `#17191A` | Text/icons on lime |
+| `primary-hover` | `#B5EF3B` | `#D0FF75` | Primary hover |
+| `primary-active` | `#A5DE2D` | `#B5EF3B` | Primary pressed |
+| `primary-border` | `#526C24` | `#C4FF4D` | Defined primary-button boundary |
+| `secondary` | `#EFF2EC` | `#283128` | Neutral secondary buttons |
+| `secondary-foreground` | `#181A1B` | `#F3F5F0` | Neutral button text |
+| `accent` | `#EDF7DA` | `#2B3A20` | Selected navigation and subtle selection |
+| `accent-foreground` | `#304914` | `#DCF6BA` | Text/icons on selected surface |
+| `link`, `ring` | `#365D19` | `#C4FF4D` | Text links and visible focus |
+| `ink` | `#17191A` | `#17191A` | Brand lettering, not default dark-mode text |
+| `overlay` | `rgba(17,20,17,0.40)` | `rgba(0,0,0,0.64)` | Modal scrim |
+
+Lime is not a text color on white. Primary actions use dark text and a defined border; selected states use a pale fill, strong text, and a leading marker. The decorative `border` token is too subtle to serve as the sole visual boundary of an input or focus indicator. Links in prose are underlined, not distinguished by color alone.
+
+### Semantic states
+
+Use the foreground for text/icons and the background for badges or small callouts. Do not paint a whole KPI card with a semantic background.
+
+| State | Light foreground / background | Dark foreground / background | Meaning |
+| --- | --- | --- | --- |
+| Success | `#166534` / `#ECF8EF` | `#8EE5AA` / `#183522` | Confirmed persistence or an explicitly successful state |
+| Warning | `#854D0E` / `#FFF6DD` | `#F5D174` / `#3D3017` | Needs attention under an approved rule |
+| Error / destructive | `#B42318` / `#FFF0ED` | `#FFB4AB` / `#411F1C` | Failed operation, invalid input, authorized destructive action |
+| Information | `#2455A4` / `#EDF4FF` | `#AAC9FF` / `#1C2E49` | Helpful context, processing information |
+| Neutral | `#52604E` / `#EFF2EC` | `#BEC9B7` / `#2A3328` | Neutral states and non-evaluative change |
+
+Expose paired names such as `success-foreground` and `success-background`; follow the same naming for warning, error, info, and neutral. Map shadcn's `destructive` to the error foreground in light mode and `#F97066` in dark mode, with `#FFFFFF` and `#17191A` respectively as `destructive-foreground`. Prefer an outlined destructive action except for the final confirmation button.
+
+Brand lime and semantic success green have different jobs. Lime says “primary” or “selected”; success green says an outcome succeeded. A stored screenshot does not earn a success badge implying business validation.
+
+Performance change uses a signed number, directional icon, and comparison label. `performance-positive` may alias success and `performance-negative` error only when the metric's approved meaning makes that interpretation valid. An increase is not automatically good. Unknown direction, incomplete comparisons, and non-evaluative activity changes use neutral text. Zero change reads “No change”; unavailable comparison reads “Comparison unavailable,” never `0%`.
+
+### Chart series
+
+| Token | Light | Dark | Default role |
+| --- | --- | --- | --- |
+| `chart-1` | `#456B22` | `#C4FF4D` | Points, primary series |
+| `chart-2` | `#3369B8` | `#8AB4FF` | Subscriptions, when shown by type |
+| `chart-3` | `#7851A9` | `#C7A5F4` | Customer reviews, when shown by type |
+| `chart-4` | `#936413` | `#E8BE64` | Additional approved category only |
+| `chart-comparison` | `#6B7369` | `#B0BAAA` | Prior comparable period, dashed stroke |
+| `chart-grid` | `#E2E7DE` | `#354035` | Quiet horizontal reference lines |
+
+The primary line is dark green on light surfaces so it remains visible; lime may fill bars with a `chart-1` outline or a small highlighted marker. Use series labels, markers, and dash patterns alongside color. Limit charts to three simultaneous series by default. Assign colors consistently across pages and themes, not by array position after filtering.
+
+### Dark theme behavior
+
+Light is the first-visit default. Provide Light, Dark, and System appearance choices in the profile menu/settings; System applies only when chosen. Persist only the appearance preference locally. Dark mode uses the token pairs above, never an inverted screenshot or translucent white cards. Inputs, selected rows, badges, menus, skeletons, charts, and focus rings all change together. Use borders and surface steps rather than large dark shadows. Evidence images keep original colors with a neutral frame. Theme changes do not animate colors across the entire page, and first paint should honor a stored preference without exposing private markup.
+
+## 4. Typography, spacing, and geometry
+
+### Typography
+
+Use Geist Sans with `ui-sans-serif, system-ui, sans-serif` fallbacks. Use the same family throughout; no decorative display font. Package or self-host font assets through the existing Next.js setup, without a request-time font dependency. Body text is sentence case; reserve uppercase for meaningful abbreviations such as IDs.
+
+| Token / role | Size / line height | Weight | Tracking |
+| --- | --- | --- | --- |
+| `page-title` | 28 / 36 px desktop; 24 / 32 px mobile | 650, or 600 if unavailable | -0.025em |
+| `section-title` | 18 / 26 px | 600 | -0.015em |
+| `panel-title` | 16 / 24 px | 600 | -0.01em |
+| `kpi-primary` | 40 / 44 px; 32 / 38 px mobile | 650, or 600 | -0.035em |
+| `kpi-secondary` | 28 / 34 px; 24 / 30 px mobile | 600 | -0.025em |
+| `body` | 15 / 24 px | 400 | 0 |
+| `table`, `control`, `navigation` | 14 / 20 px | 400; 500 for controls | 0 |
+| `label` | 13 / 20 px | 500 | 0 |
+| `caption`, `chart-label` | 12 / 18 px | 400; 500 for badges | 0 |
+
+Use 16 px input text on touch layouts to keep fields readable and avoid mobile focus zoom. Twelve pixels is the minimum for secondary metadata, not a way to squeeze primary content. Use 400/500/600 as the normal weight set; bold is selective. Wrap titles and names rather than reducing the type size.
+
+All points, ranks, counts, deltas, table numbers, and dates use tabular numerals. Align numeric table columns to the end and labels to the start. Use locale-aware grouping consistently; show full values in KPI cards and record tables, compact units only on crowded chart axes with exact values available in details. Points precision and rounding come from R08, not a design default. Show a true zero as `0`, an unavailable value as “Unavailable,” and a pending value as a skeleton or “Calculating.” Never turn missing data into zero.
+
+Use unambiguous dates such as “2 Nov 2026.” Display exact period boundaries and the approved business timezone near reporting controls. No inference from the viewer's device timezone. Dates in examples describe formatting, not approved reporting boundaries.
+
+### Spacing and dimensions
+
+Base spacing scale: `space-1 = 4`, `space-2 = 8`, `space-3 = 12`, `space-4 = 16`, `space-5 = 20`, `space-6 = 24`, `space-8 = 32`, `space-10 = 40`, `space-12 = 48`, `space-16 = 64` px. Use 2 px only for optical alignment or fine indicators. Layout spacing uses the scale rather than arbitrary values.
+
+| Item | Specification |
+| --- | --- |
+| Main container | Maximum 1440 px of content, centered inside the remaining shell width; no fixed page height |
+| Content gutters | 32 px at 1280+ viewport; 24 px at 768-1279; 16 px below 768 |
+| Section spacing | 32 px desktop, 24 px mobile |
+| Grid gaps | 24 px major panels; 16 px supporting metrics; 12 px tight form groups |
+| Card padding | 24 px normal; 20 px compact metrics; 16 px mobile |
+| Sidebar | 232 px expanded; 72 px collapsed; 12 px inner horizontal padding |
+| Top bar | 64 px desktop/tablet; 56 px mobile, allowed to grow for text zoom |
+| Sidebar item | Minimum 44 px high, 12 px horizontal padding, 12 px icon/text gap |
+| Form field gap | 20 px between fields; 8 px label-to-control; 8 px control-to-message |
+| Buttons | Default 40 px high, 16 px horizontal padding; compact 32 px; large 44 px |
+| Inputs/select triggers | Minimum 44 px high; textarea minimum 112 px and vertically resizable |
+| Table | Header minimum 40 px; body row minimum 52 px; 16 px horizontal cell padding |
+| Activity rows | Minimum 64 px with wrapped secondary context |
+| Avatar | 32 px standard; 40 px profile/drill-down; initials fallback |
+| Dialog | 480 px small, 640 px form; maximum width `viewport minus 32 px` |
+| Detail sheet | 480 px desktop; up to 640 px for evidence-rich details; full width mobile |
+| Chart plot | 280 px desktop; 220 px mobile, excluding header and data alternative |
+
+Row and header heights are minima, never clipping rules. Compact buttons must still have adequate hit area; use 44 px controls for touch and icon-only actions. One main surface can contain sections separated by space or dividers. Do not put a bordered card inside another bordered card just to group a label and value.
+
+### Radius, borders, elevation, and layers
+
+| Token | Value / role |
+| --- | --- |
+| `radius-sm` | 6 px: small badges, tooltip |
+| `radius-md` | 8 px: controls, navigation, menus |
+| `radius-lg` | 12 px: cards and upload areas |
+| `radius-xl` | 16 px: dialogs and sheets |
+| `radius-pill` | 999 px: small status pills and avatar; primary buttons remain 8 px |
+| `border-width` | 1 px standard; 2 px selected marker/control focus outline |
+| `shadow-none` | Cards and ordinary page content |
+| `shadow-sm` | `0 1px 2px rgba(17,25,17,0.05)`: occasional sticky surface edge |
+| `shadow-popover` | `0 8px 24px rgba(17,25,17,0.10)`: menus, tooltips |
+| `shadow-dialog` | `0 16px 48px rgba(17,25,17,0.16)`: modal surfaces |
+| Dark elevation | No card shadow; popover/dialog shadow uses black at 0.30/0.40 with visible surface borders |
+| Layers | Base 0; sticky table header 10; shell 20; popover 30; modal overlay 40; modal 50; in-modal popover 60; toast 70 |
+
+Focus is a 2 px `ring` outline with a 2 px surface-colored offset. It must remain visible on lime, white, selected, and dark surfaces. Never replace it with a subtle box shadow. Portal layers must preserve modal focus containment and not hide a menu behind its dialog.
+
+## 5. Shell, navigation, and responsive layout
+
+Use one shared shell for all roles. Management changes the content density and available destinations, not the branding or component system. Keep the shell mounted across route changes. A skip link leads to the main content. Sidebar, header, and main content have distinct landmarks.
+
+### Information architecture
+
+| Primary destination | Internal views and actions | Icon | Visibility |
+| --- | --- | --- | --- |
+| Overview | Summary, My Performance tab | `LayoutDashboard` | Own permitted performance |
+| Activity | Records, Points History tabs; All/Subscriptions/Customer reviews filter; add actions | `ListChecks` | Own permitted records/history |
+| Team | Team Analytics and employee drill-down; conditional Rankings tab | `Users` | Explicitly authorized management scope |
+| Administration | Access management and approved configuration only | `Settings2` | Explicitly authorized administrative capability |
+| Profile menu | Profile, Appearance, Sign out | `UserRound` | Signed-in user |
+
+“My Performance,” “Points History,” “Subscriptions,” and “Customer Reviews” are clear views within the compact architecture, not four additional top-level destinations. Logging opens from Activity or an Overview quick action. Leaderboard is a conditional Team tab, or a separately permitted Rankings view if employee peer visibility is later approved; do not expose Team management content to employees to make that link work. Settings are in the profile menu rather than an always-visible extra navigation group.
+
+Use the authorized Whizz mark at a maximum 80 x 28 px with “Repondly” beside or beneath it, with 24 px breathing space before navigation. Use a text lockup until an asset exists. Active navigation uses `accent`, `accent-foreground`, a 2 px leading marker, and `aria-current`. Inactive items use neutral text; hover adds `muted`. No rainbow icon tiles or notification dots without a real supported event.
+
+The collapse button has an accessible name and expanded state. In the 72 px rail, center 20 px icons in 44 px targets and provide visible-on-focus tooltips. Keep every destination keyboard reachable. Store collapse preference locally; never hide the active destination. The sidebar footer contains avatar/initials, display name, and the profile menu. Show a role only when its meaning is approved; do not imply permissions from a cosmetic badge.
+
+### Header and context
+
+The top bar contains navigation context on the left and the profile trigger on the right, plus at most one contextual action. The page heading appears once as the main H1 below it; drill-down can use a breadcrumb in the bar. Put reporting controls in the page heading row, not alongside a crowd of global icons. No global search, notifications bell, assistant, export, or ERP toolbar by default.
+
+Use a shared period control: Day / Week / Month segmented selector, an exact range label, previous/next controls, and a date picker when supported by the reporting contract. Custom ranges are conditional on supported queries. Preserve the selected period between related views; do not silently reset it on drill-down. Show timezone and last successful refresh in quiet text. Avoid totals for one period beside a chart for another without explicit labels.
+
+### Breakpoints
+
+Breakpoints are viewport widths: `sm 640`, `md 768`, `lg 1024`, `xl 1280`, `2xl 1536` px. Use available content width as the final layout constraint, including when the sidebar is expanded.
+
+| Width | Shell and content |
+| --- | --- |
+| Below 640 | No persistent sidebar; 56 px header with labeled menu button; single-column panels; primary KPI full width; supporting metrics stack when two cannot fit at 160 px each |
+| 640-767 | Drawer navigation; supporting metrics may form two columns; forms remain one column |
+| 768-1023 | 72 px navigation rail with an expand-to-overlay control; two-column metric layout; major chart and activity sections stack |
+| 1024-1279 | 232 px sidebar, optionally collapsed; 12-column content grid; two-column metrics unless the content width supports more |
+| 1280+ | Expanded sidebar; primary metric spans 6 of 12 columns, two supporting metrics span 3 each; main chart/detail row uses 8/4 when each panel remains readable |
+
+Below 768 px, navigation opens as a modal left sheet, maximum 320 px wide, with a close button, focus containment, Escape dismissal, and focus restoration. Avoid a second mobile bottom navigation system. On mobile, filters wrap into a two-row control area; secondary filters open a sheet with Apply and Clear. Essential date context remains visible.
+
+Forms use a centered maximum 640 px reading column. Form dialogs become full-height sheets on small screens with safe-area padding and a visible close button; keep fields above the virtual keyboard. Sticky submit controls must not cover content or focused fields. Charts reduce tick density, not text size; all values remain available in an accessible data view. Tabs may scroll horizontally with visible overflow affordance and preserved keyboard focus.
+
+Record lists become compact semantic lists on mobile: type/title, date, points when available, status when defined, and one Details link. Comparison tables that need aligned columns use an explicitly labeled horizontal scroll region; preserve row identity and never allow whole-page horizontal overflow. Do not hide required data without a detail path.
+
+## 6. Component standards
+
+Prefer shadcn/ui primitives with a small set of named variants. They provide interaction structure; these tokens and composition rules provide the Whizz identity. Do not expose component-library terminology in product labels.
+
+| Component | Anatomy and behavior |
+| --- | --- |
+| Button | Primary lime, secondary neutral, outline, ghost, and destructive variants. Use action verbs such as “Log subscription.” Optional leading 16 px icon with 8 px gap. Pending preserves width, disables duplicate sends, and changes the label to “Saving.” Disabled controls need a nearby reason when the next step is unclear. |
+| Card | Title, optional description/action, content, optional footer. White/dark surface, 1 px decorative border, 12 px radius, no default shadow. No hover effect unless actionable; use an explicit link instead of turning a card containing multiple controls into one nested link. |
+| KPI card | Label, value and unit, period context, optional supported delta, and a definition tooltip. Primary variant uses 40 px value and a 32 x 4 px lime accent above the label. Supporting variant uses 28 px value and no accent. No generic colored icon box in every metric. |
+| Badge | 12/18 px label, 4 px vertical and 8 px horizontal padding, optional 12 px icon. Always readable text such as “Saved”; color never supplies the only meaning. Use approved business-state labels verbatim. A badge is not a button unless it visibly offers a supported filter. |
+| Table | Semantic header/cell relationships, 14 px body, 13 px headers, quiet dividers, no vertical gridlines. Align numbers, keep status widths stable, show units in headings. A focused row link provides detail access; action menu is a separate target. Sort buttons announce direction. Pagination uses Previous/Next and result context, not infinite scrolling. |
+| Input / textarea | Visible label, optional help, control, inline error. Show “Optional” only for fields confirmed optional; explain the required marker once. Never use placeholder text as the label. Preserve entered values on failure. No browser input for employee ownership or authoritative points. |
+| Select | Labeled 44 px trigger; selected text remains visible; clear disabled/unavailable states. Use native select for short simple choices when suitable. Searchable combobox only when an approved choice set is genuinely long. |
+| Date picker | Text entry with a format hint plus a calendar control. Keyboard month/day navigation and visible selected range. Reporting dates follow the approved timezone and cutoff contract; do not silently assume Monday, local midnight, or permission to backdate. |
+| Dialog | Title, short purpose, content, action footer; single primary action. Focus enters a sensible control, remains contained, and returns to the opener. Escape closes unless a pending operation needs an explicit safe exit explanation. Confirm loss of a dirty form; no stacked confirmation dialogs. |
+| Sheet / drawer | Record details or mobile filters/forms. Same title and focus rules as dialogs. Preserve the list's filters and scroll position on close. Long content scrolls within one main region. Provide full-page detail navigation when needed, rather than opening nested sheets. |
+| Tabs | 40 px minimum visual row, 44 px touch targets; neutral text, selected label weight and 2 px underline. Follow tab keyboard behavior. Use actual links instead when switching routes. Do not replace all content with a blank screen during refresh. |
+| Dropdown | Labeled trigger, 8 px menu padding, 36 px minimum item height and larger touch targets. Group related actions with a single divider. Destructive actions are last and clearly named. No menu item that implies an unapproved capability. |
+| Tooltip | 12/18 px text, maximum 280 px width, 8 x 12 px padding, popover surface/border. Opens on focus as well as hover; Escape dismisses. Essential instructions and errors stay inline. Use a click-accessible information popover for definitions needed on touch. |
+| Chart | Header with question/title, period and units, plot, optional comparison control, and “View data” alternative. Share color and formatting configuration. Do not assume chart-library defaults provide accessible interaction. |
+| Empty state | Small 24 px line icon if useful, 16 px heading, one or two sentences, relevant action. “No records in this period” differs from “No results match these filters.” No large illustration, invented achievement, or fake chart line. |
+| Skeleton | Match real card/row geometry with muted blocks. Hide decorative skeletons from assistive technology and expose one loading status per region. Initial loads reserve space; background refresh keeps authorized cached content visible. |
+| Toast | Compact surface, icon, concise message, dismiss button, optional relevant link. Success normally lasts 5 seconds; errors stay inline as well. No critical information or required action exclusively in an expiring toast. Announce without stealing focus. |
+| File upload | Labeled file picker plus optional drag area, requirements, file rows, progress, and per-file error/retry. Never a decorative drop zone with no keyboard alternative. See the upload contract below. |
+| Leaderboard row | Conditional: rank, initials/avatar, authorized display name, metric with unit, and “You” label when relevant. Current user gets a subtle accent marker. Equal-height rows, no podium; only approved rank and movement data. |
+
+Use Lucide outline icons at 20 px in navigation, 16 px in buttons/metadata, and 24 px in empty states, with consistent 1.75 px stroke. Icons inherit semantic text color. Use meaningful choices such as `Plus`, `CalendarDays`, `ChevronDown`, `ArrowUpRight`, `Image`, `CircleCheck`, `TriangleAlert`, and `CircleAlert`. Icons accompanying text are decorative to screen readers; icon-only controls need an explicit accessible name. Never use a chevron to imply a row expands when it only navigates.
+
+## 7. Performance hierarchy and analytics
+
+### Employee summary composition
+
+At desktop width, use one primary points card and two quieter activity cards in a 6/3/3 grid. The primary card reads “Points this [day/week/month],” not an ambiguous “Total points.” Supporting cards may show activated subscriptions and customer reviews only after qualifying/counting rules are approved. If those values are not available, use fewer cards; do not fill the gap with fabricated metrics.
+
+Below the metrics, use a primary trend panel and a narrower category breakdown at 8/4 columns where space permits. Follow with a full-width recent activity list. The primary points card has one lime accent strip; the panels remain neutral. Quick submission access sits in the heading action or a short text action row, not inside every card.
+
+Today's, weekly, and monthly values are different selections of the same primary metric, not three equally prominent cards plus an unlabeled lifetime total. A lifetime total, trend, or rank appears only when specifically defined and useful; it never displaces the selected-period result by default. A small overview should answer “What have I recorded, what counts, and where can I inspect it?”
+
+KPI definitions explain scope and eligibility in plain language using approved rules. Delta labels identify the comparison period. Do not show a sparkline unless it represents the same definition and period as the card; the main chart usually makes it unnecessary.
+
+### Chart selection and behavior
+
+| Question / view | Visual specification | Preconditions |
+| --- | --- | --- |
+| Daily points over a selected week or month | Vertical daily bars, 4 px top radius, baseline at zero; lime fill with dark green outline in light mode | Approved day boundaries and point events; complete query coverage |
+| A single selected day | Total and chronological source records; no invented hourly curve | Hourly aggregation requires a separately approved definition |
+| Week-to-week performance | Line with 2 px stroke, straight segments, markers on selection; explicit week boundaries | Approved weekly aggregation and historical range |
+| Month-to-month performance | Same line treatment with month labels; no cumulative interpretation unless labeled and approved | Approved monthly aggregation and comparable periods |
+| Points by category | Horizontal bars with category name, exact points, and share only if meaningful | Approved categories and denominator; categories reconcile to total |
+| Subscription and review activity | Two-series grouped bars or small multiples, labeled in records rather than points | Approved qualifying counts; separate count view from point view |
+| Previous-period comparison | Optional neutral dashed line on trend charts, or an explicit text delta above bars | Approved alignment, comparable duration and eligibility; distinguish partial periods |
+| Team performance distribution | Conditional sorted horizontal bars, explicit names only for authorized viewers | R01/R10, comparison audience and metric approved |
+
+Do not build seven charts on one screen. Overview gets one main trend and at most one compact breakdown. My Performance exposes other approved aggregations through tabs or selectors. Default to the current selected period; historical range choices must be supported by the data contract. No chart-library installation is authorized by this document. Reuse a compatible existing chart integration if present; select any new library during M7 after accessibility, static-export compatibility, bundle cost, and approved chart needs are known.
+
+Chart grammar:
+
+- Use a white/dark card, 24 px padding, at most four quiet horizontal reference lines, no enclosing plot box, and no vertical grid by default. Axis labels use 12/18 px type; cap visible tick density instead of rotating labels into unreadability.
+- Bar scales start at zero. Line-chart ranges must be explicit; include zero when showing magnitude and clearly indicate any nonzero baseline. If approved corrections can be negative, extend the scale below zero and label the baseline. Never clip reversals away.
+- No 3D, gauges, gratuitous donuts, dual-axis charts, smoothed curves that invent peaks, gradients, or animation that draws fictitious intermediate values.
+- Show gaps for missing/unavailable observations, not a line through them or zero-height bars. Known empty buckets can be zero only when coverage and eligibility are established. A single data point gets a marker and text, not a misleading trend line.
+- Tooltips show full date/range, exact value and unit, relevant source category, and incomplete-data caveat. Use 14 px values, 12 px context, 12 px padding, and a 1 px border. Hover, keyboard focus, and tap must reach equivalent information; tapping outside dismisses without blocking scrolling.
+- “View data” exposes a semantic table with the same values and permitted drill-down links. A brief text summary identifies the period and notable factual change. The table remains available if the visual chart fails to load.
+- Omit the legend for one series; directly label short category bars. Multiple-series legends include text and a line/marker sample. Any series-toggle control exposes its selected state and cannot silently change a headline total.
+- Drill-down from a date or category preserves the selected reporting context. Focus returns to the originating control when closing detail. A noninteractive chart does not use a pointer cursor.
+
+### Comparison integrity
+
+Comparison eligibility, partial-period handling, ties, negative points, and rounding are business decisions. Until resolved, show the current approved result without a delta. Once defined, compare like periods and disclose both ranges. Never compare a partial current month to a complete previous month as if they were equivalent. With a zero baseline, use an approved absolute change or “No comparable baseline,” not infinity or a fabricated percentage.
+
+Display refresh time and any known incompleteness. Keep previously loaded results visible during refresh, labeled if stale. If the selected period changes, cached results for a different period must retain their old label or give way to a correctly labeled loading region. Do not show old values under a new date heading.
+
+### Management information density
+
+Managers use the same period control, type system, and metric definitions as employees. Start with at most three approved team KPIs, one trend, and an employee table. Keep the currently permitted team scope visible. A table provides comparison more clearly than twelve employee cards; show name, agreed metrics, and a drill-down link, with extra detail on demand.
+
+Default employee ordering is neutral, such as display name, until performance ordering is approved. Sorting a metric into a ranking is itself a comparison capability, not a purely visual choice. Team totals and employee views must reconcile under the same period/eligibility rules; do not average away missing data or assume an admin can inspect the team.
+
+Data-quality notices are compact inline callouts near affected results. Show an issue only when a trusted process identifies it; absence of records alone is not an anomaly or poor performance. Do not add an automated anomaly detector, approval queue, or correction action through this design. A warning can link to authorized source details once its workflow exists.
+
+## 8. Activity, forms, and protected evidence
+
+### Activity and traceability
+
+Activity is a chronological record view, not a social feed. Use one list/table with type, occurrence time where approved, record reference, points if calculated, and defined state. Details disclose submission time, source, authorized evidence, and correction history. Distinguish occurrence time from recorded time; neither should silently stand in for the other.
+
+Initial sources are manually logged subscriptions and reviews. Do not fabricate “daily performance reports” or Telegram entries; report-specific history belongs to the later import phase. When corrections exist, preserve original and correction events with the approved reason, actor visibility, and effect on points. Do not rewrite history visually as if an adjusted record had never changed.
+
+Filters: period and record type first, then approved state when it exists. Default history page size is 25 records; preserve filters and page context when returning from details. Do not invent filters for attributes absent from the approved schema. A record detail can show an evidence count without loading screenshots into every table row.
+
+### Form contracts
+
+The PRD names the record types but does not define their exact fields. The following groups specify visual order, not new mandatory inputs. Before implementing a form, map each approved field to the relevant group; omit groups with no approved fields.
+
+| Group | Subscription logging | Customer review logging |
+| --- | --- | --- |
+| Context | “Log subscription”; signed-in ownership shown as read-only context if useful | “Log customer review”; same ownership behavior |
+| Record details | Only approved R03 identifiers, product/quantity details, and qualifying activation information | Only approved R04 platform, review identifier/link, and rating fields if required |
+| Timing | Only the agreed occurrence/activation input, timezone, and backdating rules from R07 | Only the agreed review date/time input and R07 rules |
+| Evidence | Required/optional label, allowed files and count from R05 | Same; never assume screenshots are mandatory or sufficient proof |
+| Additional context | Notes only if authorized and necessary under R11 | Same; avoid collecting unnecessary review/customer text |
+| Submission footer | Cancel and “Save subscription,” or approved workflow-specific wording | Cancel and “Save review,” or approved workflow-specific wording |
+
+Never add payment amounts, customer portraits, contact details, ERP product information, points inputs, or employee selectors merely because they appear in the references. Manager submission on behalf of someone else requires separate permission. Do not estimate awarded points in a form before an authoritative rule and eligibility state exist.
+
+Validate required fields on blur or submit, not while the user is first typing. On submit failure, show an error summary with links to invalid fields, keep values intact, and focus the first actionable error. Client messages mirror trusted validation without exposing private identifiers. Server validation remains authoritative.
+
+### Submission feedback and state vocabulary
+
+Local UI states are `ready`, `saving`, `saved`, and `save failed`; they describe persistence only. Evidence transfer states are separate. Business states such as pending approval, accepted, rejected, or counted must come from R06/R08; do not install that state machine through labels or badge colors.
+
+While saving, preserve the form, show immediate feedback, and prevent repeated submission. Show “Saved” only after the backend confirms the relevant record and evidence association. On success, show a concise inline confirmation with a record-detail link, update the affected history, and refresh authoritative totals. Do not animate unconfirmed point awards or imply that “Saved” means “Validated.”
+
+If a request times out and persistence is uncertain, say “We could not confirm this save” and reconcile the result before encouraging a second submission. Safe retry and duplicate behavior depend on the approved backend contract. A failed evidence upload must not be disguised as a completed record with valid evidence. Preserve form input while explaining what succeeded, what remains, and the supported recovery action.
+
+Existing records are read-only by default until R01/R09 define editing, deletion, and correction rules. Once permitted, show explicit Edit or Correct actions and explain effects before confirmation. Remove/replace evidence controls must follow those same rules. Do not offer Undo unless the backend has an authorized reversal operation.
+
+### Upload experience
+
+- Use a 144 px minimum-height drop area, 1 px dashed `input` border, 12 px radius, a 24 px `Image` icon, “Choose screenshots,” and a short drag-and-drop hint on desktop. The file picker remains the primary accessible path; mobile copy does not require dragging.
+- Show allowed formats, size per file, total/count limits, evidence requirement, and redaction instructions from R05/R11 before selection. Do not invent numeric limits or retention claims. Upload implementation remains blocked until those rules are agreed.
+- Each selected file gets a 64 x 64 px contained preview, filename with wrapping, readable size, state label, and permitted remove action. Never crop out critical evidence in the enlarged view. Multiple-file controls appear only if evidence cardinality permits them.
+- Use the state sequence “Selected,” “Uploading,” “Processing” when trusted validation is running, then “Attached” after association succeeds. Show percentage only when real byte progress is available; otherwise use an indeterminate progress indicator. Include accessible progress text without announcing every percentage point.
+- Validate early for helpful feedback, then require trusted ownership, type/content, and size validation. Explain rejected format, oversized file, interrupted transfer, or access expiry with a specific recovery action. Preserve unaffected files; retry only where the backend supports it.
+- Before submission, local remove/replace affects the pending selection. After persistence, controls depend on correction/deletion rights. Describe discard behavior if leaving would lose a pending selection; do not persist private drafts or images in browser storage by default.
+- Enlarge evidence in an authorized viewer with filename, Close, Fit, and Zoom controls. Supply button alternatives to pinch/drag. Preserve image aspect ratio and original colors. On mobile, use a full-screen viewer with reachable controls.
+- Fetch evidence only on authorized demand using private storage and short-lived access. An expired image can request renewed authorized access; denied access uses a neutral message without revealing another person's record. Clear previews and sensitive caches on sign-out or permission changes.
+- No public share links, open-bucket URLs, screenshots in logs, or private thumbnails in global navigation. A screenshot's presence is an attachment fact, never proof that the activity qualifies or earns points.
+
+## 9. Subtle gamification
+
+Gamification is conditional and must not delay the accurate core tracking experience. The initial design gets its energy from clear progress over time, responsive controls, and trustworthy history, without inventing awards.
+
+| Conditional feature | Allowed presentation once approved | Required definition |
+| --- | --- | --- |
+| Leaderboard | Calm ranked list with aligned numbers, period, scope, and own-row marker | Audience, metric, eligibility, ties, period, corrections, completeness, privacy |
+| Personal best | Small inline highlight in My Performance with the exact period/value | Comparable historical coverage, eligible records, revised-history behavior |
+| Weekly achievement | One concise text callout with a small line icon | Approved criterion and award timing; never an invented point bonus |
+| Personal goal | Thin labeled progress bar with actual value and approved target | Ownership/edit rights, target source, period, treatment of over-target/negative values |
+| Streak | Quiet text annotation, no flames or punitive messaging | Work calendar, time off, missing data, late entries, corrections, reliable timezone |
+| Rank indicator | Rank numeral; a small neutral medal outline for approved top positions | Tie presentation and rank calculation; no assumed gold/silver/bronze hierarchy |
+
+No childish badges, public comparisons, podiums, confetti, forced celebrations, shaming labels, or unexplained movement arrows. A confirmed achievement may use a single 150 ms icon fade; reduced motion removes it. Never replay it on every page visit. Corrections can change achievements only according to the approved business rules, with transparent context rather than silent manipulation.
+
+## 10. Interaction, loading, and failure standards
+
+### Motion tokens
+
+| Token | Duration / curve | Use |
+| --- | --- | --- |
+| `motion-fast` | 100 ms, ease-out | Button hover/pressed colors, row hover |
+| `motion-standard` | 150 ms, cubic-bezier(0.2, 0, 0, 1) | Popover opacity, tab indicator, optional confirmed number crossfade |
+| `motion-panel` | 180 ms, cubic-bezier(0.2, 0, 0, 1) | Sheet/dialog entrance, sidebar width change |
+| `motion-skeleton` | 1600 ms gentle opacity pulse | Initial skeleton only; no sweeping shimmer |
+
+Pressed buttons use the active token; no bounce or large scale transform. Actionable cards may change border and background, not lift off the page. Dialogs may move at most 8 px while fading; sheets slide without overshoot. Keep all controls usable during transitions. Charts render values immediately; no animated path drawing. Optional number updates crossfade the final confirmed value, never count through fabricated intermediate scores.
+
+With reduced motion, remove transforms, skeleton pulsing, number transitions, and animated scrolling. State changes remain immediate and understandable. Open tooltips after about 400 ms hover or immediately on keyboard focus; dismissal is immediate. Tabs respond immediately while their content reports loading separately.
+
+### Shared state contract
+
+| State | Required presentation |
+| --- | --- |
+| Initial load | Shell stays visible; region-shaped skeleton and one loading announcement; no fake zeroes |
+| Background refresh | Keep authorized cached data and last successful refresh time; quiet progress; no whole-page flash |
+| First-use empty | Explain no records exist and offer a permitted logging action; no invented totals or accomplishments |
+| Empty period | Name the selected range; offer another period or a permitted submission action |
+| Filtered empty | “No results match these filters” with Clear filters; retain chosen filters |
+| Partial failure | Keep successful sections; inline failed-region message and Retry; do not imply totals are complete |
+| Full failure | Plain explanation, Retry, and safe navigation; no stack trace or sensitive backend detail |
+| Permission denial | Neutral access message and return link; no private preview or count; server authorization remains decisive |
+| Validation failure | Error summary and associated field errors; preserve user input and focus the actionable issue |
+| Save success | Confirm persistence, provide record access, refresh relevant data; no assumed approval or points |
+| Session expiry | Explain sign-in is needed; protect private content; preserve a safe return destination without private form data in URLs |
+| Unavailable calculation | “Points unavailable” with a factual reason when safe; never substitute a sample value |
+
+Do not label work “Live” without a real supported refresh contract. Follow the architecture's focus-refresh model initially. Target immediate visible feedback, but do not hide delays behind false success. Unknown request outcomes and retry restrictions must be explained in the affected workflow.
+
+## 11. Accessibility and usability
+
+Target [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/) for complete flows. Text contrast must reach 4.5:1 for ordinary text and 3:1 for qualifying large text; essential control boundaries and graphical information need 3:1. Support keyboard access, visible unobscured focus, semantic labels, programmatically associated errors, and status announcements. Do not rely on color alone. Support text resizing and reflow at 320 CSS px, with intentional table scrolling where necessary. Authentication must allow password managers and paste; dragging needs an alternative. These requirements are acceptance targets, not a claim of conformance.
+
+Product-specific practices:
+
+- Use 44 x 44 px touch and icon-button targets. Desktop compact controls may have smaller visual geometry with separated hit areas; avoid overlapping hit boxes.
+- Maintain one H1, logical section headings, meaningful control names, and a visible skip link. Keep DOM reading order aligned with visual order on every breakpoint.
+- Preserve focus after modal close, row updates, failed saves, and navigation. Sticky headers, toast stacks, and mobile footers must not cover the focused control.
+- Give every chart a text summary and data table; avoid dozens of needless tab stops. Make period controls and meaningful data selections keyboard reachable.
+- File upload works without drag-and-drop. Evidence viewers have keyboard zoom/close controls and descriptive labels without unnecessarily copying sensitive image contents into alt text.
+- Tooltips supplement visible labels. Use polite announcements for save/load results, urgent alerts only for actionable failures, and avoid live-region chatter during chart interaction.
+- Keep touch scrolling, browser zoom, and reduced-motion preferences intact. Never disable zoom or rely on hover to reveal a required action.
+
+The proposed palette, focus treatments, and dark variants require owner verification in rendered screens. No contrast calculation, accessibility audit, browser run, or conformance check has been executed as part of this documentation task.

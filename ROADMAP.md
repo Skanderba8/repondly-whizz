@@ -5,7 +5,7 @@ Status: **Complete**, **In progress**, **Blocked**, **Upcoming**. Completion mea
 | ID | Milestone | Status | Completion criteria / dependency |
 | --- | --- | --- | --- |
 | P0 | Inspect repository and write planning baseline | Complete | Empty repository inspected; seven planning documents created; unresolved rules recorded. Owner approval pending. |
-| M1 | Scaffold and tooling | Upcoming | After approval: Next.js/TypeScript/Tailwind/shadcn scaffold; chosen lockfile; strict typing; lint, Vitest, Playwright, environment placeholders, and CI scripts; simple neutral shell; owner confirms clean install/build and smoke coverage. |
+| M1 | Scaffold and tooling | In progress | Foundation implemented on `feat/app-foundation`: Next.js static export, TypeScript, Tailwind/shadcn, lazy Supabase client, npm lockfile, Vitest/Playwright coverage, manual CI, and responsive preview shell. Owner verification pending; no checks or server run by the agent. |
 | M2 | Access policy specification | Upcoming | Owner approves invite lifecycle, role matrix, team scope, evidence visibility, and offboarding behavior; allow/deny examples documented. No scoring dependency. |
 | M3 | Authentication and authorization foundation | Upcoming | Depends on M1/M2: migrations, invite-based auth, protected shell, RLS and role assignment; policy tests cover all roles and cross-user denial; owner verifies sign-in and access. |
 | M4 | Manual record and evidence contract | Upcoming | Owner resolves required fields, evidence, timestamps, duplicates, review states, corrections, and deletion rules; sample valid/invalid records approved. Can be planned alongside M2. |
@@ -18,9 +18,9 @@ Status: **Complete**, **In progress**, **Blocked**, **Upcoming**. Completion mea
 
 ## Current work queues
 - **Completed:** repository inspection and planning document creation (P0).
-- **In progress:** none. Planning package is ready for owner review.
-- **Blocked:** application implementation awaits explicit owner approval; affected business features also await their rule decisions. No external technical blocker is known.
-- **Upcoming:** M1 scaffold; then access and manual-record rule decisions before the dependent features.
+- **In progress:** M1 foundation, authorized by the owner; implementation delivered for owner checks.
+- **Blocked:** authentication and business features await their permission and data-rule decisions. Cloudflare deployment/domain setup is unfinished.
+- **Upcoming:** owner verification of M1; M2 access policy decisions, followed by authentication. GitHub Actions is manual-only until the owner enables automatic checks.
 
 ## Exact first implementation task
 After owner approval, execute **M1 only**: initialize a single Next.js App Router project with strict TypeScript, Tailwind, and shadcn/ui; choose and lock compatible dependencies; configure lint, Vitest, Playwright, and baseline CI; add non-secret environment examples and a minimal neutral application shell. Do not implement authentication, dashboards, scoring, uploads, Telegram integration, or provision services in that task.

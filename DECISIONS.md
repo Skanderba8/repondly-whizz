@@ -18,6 +18,8 @@ State labels: **Confirmed** means supplied by the owner; **Proposed** awaits app
 For new decisions, add an ID, state, date when resolved, rationale, and affected milestones. Preserve superseded choices with a replacement reference instead of silently rewriting business history.
 
 ## Structure discussion: 2026-11-02
+- **D16, Confirmed:** Owner authorized starting the application foundation. M1 uses npm with a committed lockfile, Node 24, static Next.js export, and GitHub Actions with manual dispatch to respect the no-check-execution preference. Supabase client setup does not imply verified connectivity or approved database access.
+
 Infrastructure details confirmed by the owner: GitHub repository `https://github.com/Skanderba8/repondly-whizz.git`; app hostname `whizz.repondly.com` (supersedes the earlier `app.repondly.com` preference); Supabase project `zffaxlprvnxuqqmczhyi`. Browser-safe Supabase configuration is stored in Git-ignored `.env.local`. Repository connection is authorized; Cloudflare deployment and DNS connection are pending.
 
 - **D11, Confirmed:** Start simple and scale as needed. Prioritize polished responsive UI and fast navigation/write feedback. Recurring service budget is $0 beyond the existing domain.

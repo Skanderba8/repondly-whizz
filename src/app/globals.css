@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8f5;
+  --foreground: #182c29;
+  --card: #ffffff;
+  --card-foreground: #182c29;
+  --popover: #ffffff;
+  --popover-foreground: #182c29;
+  --primary: #215c4d;
+  --primary-foreground: #ffffff;
+  --secondary: #e8efea;
+  --secondary-foreground: #244b40;
+  --muted: #eef1ed;
+  --muted-foreground: #58665f;
+  --accent: #e2eee5;
+  --accent-foreground: #1c493b;
+  --destructive: #b73535;
+  --border: #dce2da;
+  --input: #dce2da;
+  --ring: #215c4d;
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Segoe UI", Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+  ::selection { background: var(--accent); color: var(--accent-foreground); }
+}
+
+@layer components {
+  .workspace-sidebar { @apply flex flex-col gap-7 border-b border-border bg-card px-6 py-6 md:sticky md:top-0 md:h-svh md:gap-0 md:border-r md:border-b-0 md:px-7 md:py-9; }
+  .brand { @apply flex w-fit items-center gap-3 text-2xl font-bold tracking-tight; }
+  .brand-mark { @apply flex size-10 items-center justify-center rounded-xl bg-foreground text-2xl text-card; }
+  .brand-mark span { @apply text-accent; }
+  .eyebrow { @apply text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase; }
+  .nav-link { @apply flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground; }
+  .nav-link-active { @apply bg-secondary text-secondary-foreground; }
+  .page-title { @apply mt-5 text-4xl leading-[1.12] font-semibold tracking-[-0.045em] sm:text-5xl lg:text-6xl; text-wrap: balance; }
+  .welcome-panel { @apply grid gap-10 rounded-2xl border border-border bg-card p-7 md:grid-cols-[1.1fr_1fr] lg:p-10; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-5 focus:py-3 focus:text-primary-foreground; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
