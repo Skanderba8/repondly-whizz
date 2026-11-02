@@ -1,4 +1,4 @@
-"""Parse only allowlisted CSR blocks. No scoring formulas or raw-message persistence."""
+"""Parse allowlisted CSR blocks and select same-message duplicates by approved bonus."""
 
 import re
 import unicodedata
@@ -26,6 +26,22 @@ METRICS = {
 
 def cents(value: str) -> int:
     return int(Decimal(value.replace(",", "")) * 100)
+
+
+def select_message_duplicate(rows: list[dict]) -> dict:
+    first = rows[0]
+    if all(row == first for row in rows):
+        return first
+    if any(row["rtf_revenue_cents"] is None for row in rows):
+        raise ReportError("Same-message duplicates have missing RTF revenue; highest bonus cannot be determined")
+    # Compare exact cents using the shared approved rates, without payout rounding.
+    bonuses = [Decimal(row["points"]) * 50 + Decimal(row["rtf_revenue_cents"]) * Decimal("0.025") for row in rows]
+    highest = max(bonuses)
+    winners = [row for row, bonus in zip(rows, bonuses) if bonus == highest]
+    winner = winners[0]
+    if any(row != winner for row in winners):
+        raise ReportError("Same-message duplicates tie for highest bonus with different fields; owner reconciliation required")
+    return winner
 
 
 def parse_report(text: str, team_names: list[str], location_names: list[str]) -> list[dict]:
@@ -67,12 +83,8 @@ def parse_report(text: str, team_names: list[str], location_names: list[str]) ->
     if current_name:
         blocks.append((current_name, current_lines))
 
-    output: list[dict] = []
-    seen: set[str] = set()
+    candidates: dict[str, list[dict]] = {}
     for name, lines in blocks:
-        if name in seen:
-            raise ReportError("Repeated team member in one report")
-        seen.add(name)
         totals = [match for line in lines if (match := TOTAL.fullmatch(line))]
         if len(totals) != 1:
             raise ReportError("A matched CSR has no unambiguous points total")
@@ -86,5 +98,6 @@ def parse_report(text: str, team_names: list[str], location_names: list[str]) ->
             activity[f"{key}_revenue_cents"] = cents(matches[0].group(2)) if matches else None
             if key == "rtf":
                 rtf_revenue = activity[f"{key}_revenue_cents"]
-        output.append({"report_name": name, "points": str(Decimal(totals[0].group(2))), "rtf_revenue_cents": rtf_revenue, "activity": activity})
-    return output
+        candidates.setdefault(name, []).append({"report_name": name, "points": str(Decimal(totals[0].group(2))), "rtf_revenue_cents": rtf_revenue, "activity": activity})
+    # This grouping exists only for this parse call, which receives one Telegram message.
+    return [select_message_duplicate(rows) for rows in candidates.values()]
