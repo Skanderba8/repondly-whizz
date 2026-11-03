@@ -90,6 +90,9 @@ Deno.serve(async (request: Request) => {
         && existing.work_date === record.work_date && existing.note === record.note && existing.screenshot_hash === hash) return reply(200, { id: record.id });
       return reply(409, { error: "Save reference already used. Contact the owner before retrying." });
     }
+    // The mutation migration also enforces this at INSERT time to cover concurrent deletes.
+    const deleted = await admin.from("review_mutations").select("id").eq("record_id", record.id).eq("action", "delete").limit(1);
+    if (deleted.data?.length) return reply(409, { error: "This review was deleted. Its original save cannot be retried." });
     const path = `${owner}/${record.id}`;
     const uploaded = await admin.storage.from("review-evidence").upload(path, bytes, { contentType: mime, upsert: false, cacheControl: "0" });
     if (uploaded.error) {
@@ -101,6 +104,10 @@ Deno.serve(async (request: Request) => {
       if (priorHex !== hash) return reply(409, { error: "Screenshot reference already used. Contact the owner." });
     }
     const inserted = await admin.from("bonus_entries").insert({ ...record, owner_id: owner, kind: "review", screenshot_path: path, screenshot_hash: hash });
+    if (inserted.error?.code === "23514" && inserted.error.message.includes("Deleted review reference")) {
+      await admin.storage.from("review-evidence").remove([path]);
+      return reply(409, { error: "This review was deleted. Its original save cannot be retried." });
+    }
     if (inserted.error) return reply(503, { error: "Save could not be confirmed. Retry the same entry." });
     return reply(200, { id: record.id });
   } catch (error: unknown) {

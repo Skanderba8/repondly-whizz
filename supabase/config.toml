@@ -1,0 +1,13 @@
+project_id = "repondly-whizz"
+
+[functions.save-review]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/save-review/index.ts"
+import_map = "./functions/save-review/deno.json"
+
+[functions.manage-review]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/manage-review/index.ts"
+import_map = "./functions/manage-review/deno.json"
