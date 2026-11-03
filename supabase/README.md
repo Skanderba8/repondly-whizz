@@ -221,3 +221,20 @@ Storage behavior follows https://supabase.com/docs/guides/storage/management/del
 4. On both Reviews and DoorDash, verify the month input and arrows filter the adjacent list, This month resets to the current reporting-store month, manager scope retains permissions, count/bonus match database records, February/leap/year boundaries cover the full month, and deleting the last row on the last page returns to a valid page. Check keyboard/mobile layout, dialog focus and retry behavior. Overview/Activity keep their existing controls.
 
 No checks, migration, RPC calls, hosted queries, deployment, push, or server run was performed by the agent. Mutation receipts are private operational metadata required for safe retry and deleted-ID protection; general retention is not decided here.
+
+## Overview team-comparison rollout: 2026-11-03
+
+Completed locally: overview layout, stable From/To trigger, two-decimal currency formatting, shared delivery border, green category meters, anonymous-maxima SQL migration, and concurrent API integration. No hosted steps have been executed.
+
+1. After the existing migrations 001-007, copy migration 008 into the clipboard with PowerShell:
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+Get-Content -Raw -LiteralPath .\supabase\migrations\202611030008_category_benchmarks.sql | Set-Clipboard
+```
+
+2. Open Supabase project zffaxlprvnxuqqmczhyi, SQL Editor, New query. Paste the complete migration and click Run once. It adds the read-only tracker_category_benchmarks(date, date) RPC; it does not update stored reports. If prior migrations are unapplied, apply them in timestamp order first. Do not rerun already-applied migrations or repair migration history blindly.
+3. Publish the frontend through the existing release process after SQL succeeds. No Edge Function, Storage change, new environment variable, or service key is required. If the frontend is published first, totals still load while team comparisons show unavailable.
+4. Owner verification with synthetic accounts/data: deny anonymous/nonmember/expired-member calls; allow current employee/manager aggregate calls with only fixed category keys/maxima in the response; retain employee isolation on raw reports and peer reporting. Reconcile maxima from per-person sums over the identical period, including multiple stores, zero, null, ties, no reports, and period boundaries. Confirm team aggregate view has no misleading individual-scale meters. Verify layout, Yesterday From/To stability, two-decimal presentation, unchanged stored precision, bonus sizing, and retry after missing-function/network failures.
+
+No migration application, hosted query, function deployment, server, build, automated check, or browser run was performed by the agent.

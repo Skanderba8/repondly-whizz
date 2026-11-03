@@ -1,68 +1,85 @@
 "use client";
 
-import { useState } from "react";
-import { Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { WorkspacePanel } from "@/components/workspace-panel";
-import { money, pointsLabel, type Period } from "./domain";
-import { comparisonScale, type ComparisonMetric, type Reporting } from "./reporting";
-import { ReportingChart } from "./reporting-charts";
+import { money, pointsLabel } from "./domain";
+import type { Reporting } from "./reporting";
 
 const activityLabels: Record<string, string> = {
   new_subscriptions: "New subscriptions", bikes_and_batteries: "Bikes and batteries",
   rtf: "RTF", rtc: "RTC", accessories: "Accessories",
 };
-const comparisonOptions = [
-  { value: "points", label: "Reported points" }, { value: "commission", label: "RTF commission" },
-  { value: "review_count", label: "Google reviews" }, { value: "doordash_count", label: "DoorDash subscriptions" },
-];
 
-function ValueBar({ percent }: { percent: number }) {
-  return <div aria-hidden="true" className="meter-track"><div className="meter-fill" style={{ width: `${percent}%` }} /></div>;
+function CategoryValue({ value, maximum, currency = false, compare, label }: {
+  value: number | null; maximum: number | null; currency?: boolean; compare: boolean; label: string;
+}) {
+  const format = (amount: number) => currency ? money(amount) : pointsLabel(amount);
+  const percent = value !== null && maximum !== null && maximum > 0 ? Math.min(100, Math.max(0, value / maximum * 100)) : 0;
+  return <div className="flex min-w-28 flex-col gap-2">
+    <span className="text-base font-semibold tabular-nums">{value === null ? "Unavailable" : format(value)}</span>
+    {compare && value !== null && maximum !== null ? <>
+      <div role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={Math.max(maximum, value, 1)} aria-valuenow={value} aria-valuetext={`${format(value)}; team high ${format(maximum)}`} className="category-benchmark-track"><div className="category-benchmark-fill" style={{ width: `${percent}%` }} /></div>
+      <span className="text-xs text-muted-foreground">Team high <span className="tabular-nums">{format(maximum)}</span></span>
+    </> : null}
+  </div>;
 }
 
-export function DashboardAnalytics({ data, bucket, owner, accountId, onSelect }: {
-  data: Reporting; bucket: Period; owner: string; accountId: string; onSelect: (owner: string) => void;
+export function DashboardAnalytics({ data, owner, accountId, onSelect }: {
+  data: Reporting; owner: string; accountId: string; onSelect: (owner: string) => void;
 }) {
-  const [comparison, setComparison] = useState<ComparisonMetric>("points");
   const s = data.summary;
-  const incomplete = s.commission_missing > 0 || s.report_count === 0;
-  const countMax = Math.max(1, ...data.categories.map((row) => row.count ?? 0));
-  const revenueMax = Math.max(1, ...data.categories.map((row) => row.revenue ?? 0));
-  const comparisonValues = data.members.map((member) => member[comparison]);
+  const compare = owner !== "team";
   return <>
-    <section aria-label="Selected-period totals" className="panel">
-      <dl className="grid divide-y sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">{[
-        { label: "Reported points", value: pointsLabel(s.points ?? 0), detail: `${s.report_count} imported reports` },
-        { label: "Point value", value: money(s.point_value ?? 0), detail: "Reported points × $0.50" },
-        { label: "Extra bonuses", value: money(s.extra_bonus ?? 0), detail: `RTF + reviews + DoorDash${incomplete ? " · known amounts" : ""}` },
-        { label: "Total estimated earnings", value: money(s.total_earnings ?? 0), detail: `Point value + extra bonuses${incomplete ? " · incomplete source data" : ""}` },
-      ].map((stat) => <div key={stat.label} className="dashboard-stat"><dt className="text-sm text-muted-foreground">{stat.label}</dt><dd className="tracker-metric break-words">{stat.value}</dd><p className="metric-caption">{stat.detail}</p></div>)}</dl>
+    <section aria-label="Selected-period totals" className="panel overview-totals">
+      <dl className="grid grid-cols-2 lg:grid-cols-4">{[
+        { label: "Total points", value: pointsLabel(s.points ?? 0), detail: `${s.report_count} imported reports` },
+        { label: "Point value", value: money(s.point_value ?? 0), detail: "$0.50 per point" },
+        { label: "Extra bonuses", value: money(s.extra_bonus ?? 0), detail: "RTF, reviews and DoorDash" },
+        { label: "Estimated earnings", value: money(s.total_earnings ?? 0), detail: "Point value + extra bonuses" },
+      ].map((stat) => <div key={stat.label} className="overview-total"><dt className="text-sm font-medium text-muted-foreground">{stat.label}</dt><dd className="my-1 break-words text-[28px] leading-9 font-semibold tracking-tight tabular-nums">{stat.value}</dd><p className="text-xs text-muted-foreground">{stat.detail}</p></div>)}</dl>
     </section>
-    <div className="grid items-start gap-6"><ReportingChart series={data.series} bucket={bucket} mode="points" /><ReportingChart series={data.series} bucket={bucket} mode="earnings" /></div>
-    <WorkspacePanel id="earnings-breakdown" title="Extra bonus breakdown">
-      <dl className="grid gap-6 px-4 pb-5 sm:grid-cols-3 md:px-6">{[
-        { label: "RTF commission", value: s.commission, detail: `2.5% of collected RTF revenue${s.commission_missing ? ` · ${s.commission_missing} reports missing revenue` : ""}` },
-        { label: "Google reviews", value: s.review_cents / 100, detail: `${s.review_count} reviews × $2` },
-        { label: "DoorDash", value: s.doordash_cents / 100, detail: `${s.doordash_count} subscriptions × $5` },
-      ].map((item) => <div key={item.label} className="flex flex-col gap-2"><dt className="text-sm text-muted-foreground">{item.label}</dt><dd className="text-2xl font-semibold tabular-nums">{item.value === null ? "Unavailable" : money(item.value)}</dd><p className="metric-caption">{item.detail}</p></div>)}</dl>
-      <p className="border-t px-4 py-3 text-xs text-muted-foreground md:px-6">All values use the selected date range. Estimates are tracking amounts, not confirmed payouts. Missing source data can make totals incomplete.</p>
-    </WorkspacePanel>
-    <WorkspacePanel id="activity-categories" title="Activity by category" action={<span className="text-xs text-muted-foreground">Reported counts and revenue, not category points</span>}>
-      <div role="region" aria-label="Activity by category, scroll for revenue" tabIndex={0} className="overflow-x-auto"><table className="tracker-table min-w-[520px]"><caption className="sr-only">Selected-period category counts and collected revenue</caption><thead><tr><th scope="col">Category</th><th scope="col">Activity count</th><th scope="col">Collected revenue</th></tr></thead><tbody>{data.categories.map((row) => <tr key={row.key}><th scope="row" className="px-4 py-3 text-left text-sm font-medium">{activityLabels[row.key] ?? row.key}</th><td><p className="mb-2 font-medium tabular-nums">{row.count === null ? "Unavailable" : row.count.toLocaleString()}</p><ValueBar percent={(row.count ?? 0) / countMax * 100} />{row.count_missing ? <p className="mt-1 text-xs text-muted-foreground">{row.count_missing} reports missing count</p> : null}</td><td><p className="mb-2 font-medium tabular-nums">{row.revenue === null ? "Unavailable" : money(row.revenue)}</p><ValueBar percent={(row.revenue ?? 0) / revenueMax * 100} />{row.revenue_missing ? <p className="mt-1 text-xs text-muted-foreground">{row.revenue_missing} reports missing revenue</p> : null}</td></tr>)}</tbody></table></div>
-      
-    </WorkspacePanel>
-    {data.members.length ? <WorkspacePanel id="team-comparisons" title="Team comparisons" action={<div className="w-full sm:w-56"><Select aria-label="Comparison metric" value={comparison} onValueChange={(value) => setComparison(value as ComparisonMetric)} options={comparisonOptions} /></div>}>
-      <p className="px-4 pb-4 text-xs text-muted-foreground md:px-6">Highest known value fills the bar. Crowns mark positive leaders, including ties. Only managers can see this comparison.</p>
-      <ul className="divide-y">{data.members.map((member) => {
-        const amount = member[comparison];
-        const scale = comparisonScale(amount, comparisonValues);
-        return <li key={member.user_id} className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(120px,1fr)_auto] sm:items-center md:px-6"><div className="min-w-0"><p className="flex items-center gap-2 text-sm font-medium"><span className="break-words">{member.display_name}{member.user_id === accountId ? " (you)" : ""}</span>{scale.leader ? <Crown role="img" aria-label="Highest value in this category" className="size-4 shrink-0 text-warning-foreground" /> : null}</p><p className="text-xs text-muted-foreground">{member.report_count} reports{member.commission_missing && comparison === "commission" ? " · partial RTF revenue" : ""}</p></div><div className="flex flex-col gap-2"><span className="text-sm font-semibold tabular-nums">{amount === null ? "Unavailable" : comparison === "commission" ? money(amount) : amount.toLocaleString()}</span><ValueBar percent={scale.percent} /></div><Button variant={member.user_id === owner ? "secondary" : "outline"} aria-label={`View ${member.display_name}'s records`} onClick={() => onSelect(member.user_id)}>View records</Button></li>;
-      })}</ul>
-      <p className="border-t px-4 py-3 text-xs text-muted-foreground md:px-6">Alphabetical · {data.members.length} mapped accounts. Unmapped people and uncollected reports are not included.{owner === "team" ? ` ${data.members_with_reports} of ${data.mapped_members} members have imported reports in this range.` : ""}</p>
-    </WorkspacePanel> : null}
+    <div className="overview-detail-grid">
+      <WorkspacePanel id="activity-categories" title="Activity by category" action={<span className="text-xs text-muted-foreground">{compare ? "Compared with team highs" : "Whole team totals"}</span>}>
+        <div className="overview-detail-body">
+          {compare && !data.team_benchmarks ? <p className="px-4 pb-3 text-xs text-muted-foreground">Team comparison unavailable. Refresh to retry.</p> : null}
+          <div role="region" aria-label="Category counts and revenue with team comparisons" tabIndex={0} className="min-w-0 overflow-x-auto">
+            <table className="tracker-table overview-category-table min-w-[480px]">
+              <caption className="sr-only">Activity for the selected period, with each measure compared to the highest individual total in the team</caption>
+              <thead><tr><th scope="col">Category</th><th scope="col">Activity count</th><th scope="col">Collected revenue</th></tr></thead>
+              <tbody>{data.categories.map((row) => {
+                const benchmark = data.team_benchmarks?.find((item) => item.key === row.key);
+                const label = activityLabels[row.key] ?? row.key;
+                return <tr key={row.key}>
+                  <th scope="row">{label}</th>
+                  <td><CategoryValue value={row.count} maximum={benchmark?.count_max ?? null} compare={compare} label={`${label} count compared with the team high`} /></td>
+                  <td><CategoryValue value={row.revenue} maximum={benchmark?.revenue_max ?? null} currency compare={compare} label={`${label} revenue compared with the team high`} /></td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </div>
+          {!data.categories.length || s.report_count === 0 ? <p className="px-4 py-3 text-sm text-muted-foreground">No imported activity in this period.</p> : null}
+          {data.members.length ? <details className="border-t">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Team totals <span className="text-muted-foreground">({data.members.length})</span></summary>
+            <ul className="divide-y">{data.members.map((member) => <li key={member.user_id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+              <span className="text-sm">{member.display_name}{member.user_id === accountId ? " (you)" : ""}</span>
+              <div className="flex items-center gap-3"><span className="text-sm tabular-nums">{pointsLabel(member.points)} points</span><Button variant="ghost" onClick={() => onSelect(member.user_id)} aria-label={`View ${member.display_name}'s overview`}>View</Button></div>
+            </li>)}</ul>
+          </details> : null}
+        </div>
+      </WorkspacePanel>
+      <WorkspacePanel id="earnings-breakdown" title="Extra bonus breakdown" action={<span className="text-xl font-semibold tabular-nums">{money(s.extra_bonus ?? 0)}</span>}>
+        <div className="overview-detail-body overview-bonus-body">
+          <dl className="overview-bonus-list">{[
+            { label: "RTF commission", value: s.commission, detail: "2.5% of collected RTF revenue" },
+            { label: "Google reviews", value: s.review_cents / 100, detail: `${s.review_count} reviews × $2` },
+            { label: "DoorDash", value: s.doordash_cents / 100, detail: `${s.doordash_count} subscriptions × $5` },
+          ].map((item) => <div key={item.label} className="overview-bonus-row">
+            <div><dt className="text-sm font-semibold">{item.label}</dt><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.detail}</p></div>
+            <dd className="text-2xl font-semibold tracking-tight tabular-nums">{item.value === null ? "Unavailable" : money(item.value)}</dd>
+          </div>)}</dl>
+          <p className="border-t px-5 py-3 text-xs text-muted-foreground">Bonuses are separate from your point value.</p>
+        </div>
+      </WorkspacePanel>
+    </div>
   </>;
 }
-
-

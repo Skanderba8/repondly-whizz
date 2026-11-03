@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { WorkspaceAccount } from "@/features/access/access";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { contextSchema, snapshotSchema, type TrackerContext, type Snapshot, type Period } from "./domain";
-import { reportingSchema, type Reporting } from "./reporting";
+import { categoryBenchmarksSchema, reportingSchema, type Reporting } from "./reporting";
 
 type TrackerState = {
   account: WorkspaceAccount;
@@ -78,9 +78,20 @@ export function TrackerProvider({ account, children }: { account: WorkspaceAccou
     const cached = dashboardCache.current.get(key);
     if (cached) return cached;
     const request = (async () => {
-      const result = await getSupabaseClient().rpc("tracker_reporting", { p_owner: owner === "team" ? null : owner, p_start: start, p_end: end, p_bucket: bucket });
-      if (result.error) throw result.error;
-      return reportingSchema.parse(result.data);
+      const [reportingResult, benchmarkResult] = await Promise.allSettled([
+        (async () => {
+          const result = await getSupabaseClient().rpc("tracker_reporting", { p_owner: owner === "team" ? null : owner, p_start: start, p_end: end, p_bucket: bucket });
+          if (result.error) throw result.error;
+          return reportingSchema.parse(result.data);
+        })(),
+        (async () => {
+          const result = await getSupabaseClient().rpc("tracker_category_benchmarks", { p_start: start, p_end: end });
+          if (result.error) throw result.error;
+          return categoryBenchmarksSchema.parse(result.data);
+        })(),
+      ]);
+      if (reportingResult.status === "rejected") throw reportingResult.reason;
+      return { ...reportingResult.value, team_benchmarks: benchmarkResult.status === "fulfilled" ? benchmarkResult.value : null };
     })();
     dashboardCache.current.set(key, request);
     inFlight.current.add(request);

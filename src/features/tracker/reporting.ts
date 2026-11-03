@@ -35,7 +35,9 @@ export const reportingAmountsSchema = z.object({
   commission: z.number().nullable(), commission_missing: z.number(), review_cents: z.number(), review_count: z.number(),
   doordash_cents: z.number(), doordash_count: z.number(), extra_bonus: z.number().nullable(), total_earnings: z.number().nullable(),
 });
+export const categoryBenchmarksSchema = z.array(z.object({ key: z.string(), count_max: z.number().nullable(), revenue_max: z.number().nullable() }));
 export const reportingSchema = z.object({
+  team_benchmarks: categoryBenchmarksSchema.nullable().optional(),
   summary: reportingAmountsSchema,
   series: z.array(reportingAmountsSchema.extend({ start: isoDate, end: isoDate })),
   categories: z.array(z.object({ key: z.string(), count: z.number().nullable(), revenue: z.number().nullable(), count_missing: z.number(), revenue_missing: z.number() })),
