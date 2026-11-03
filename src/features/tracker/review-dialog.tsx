@@ -129,6 +129,5 @@ export function ReviewDialog({ id, action, onClose }: { id: string; action: "edi
         {uncertain ? <p className="text-xs text-muted-foreground">Keep this window open and retry the same change. Details are locked until it is confirmed.</p> : null}
         <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-5"><Button type="button" variant="outline" disabled={locked} onClick={onClose}>Cancel</Button><Button type="submit" variant={action === "delete" ? "destructive" : "default"} disabled={!review || loading || busy || preparing || !!fileError || canReload}>{busy ? (action === "delete" ? "Deleting review and screenshot..." : "Saving changes...") : uncertain ? "Retry same change" : action === "delete" ? "Delete review" : "Save changes"}</Button></div>
       </form>}
-    </Dialog.Content>
-  </Dialog.Portal></Dialog.Root>;
+  </RecordDialog>;
 }
