@@ -1,11 +1,14 @@
 "use client";
 
 import { Inbox } from "lucide-react";
+import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Badge } from "@/components/ui/badge";
 import { dateLabel, money, type HistoryRecord } from "./domain";
 import { EvidenceViewer } from "./evidence-viewer";
 import { useTracker } from "./tracker-provider";
+import { ReviewDialog } from "./review-dialog";
 
 const names = { productivity: "Productivity", review: "Google review", doordash: "DoorDash" };
 const activityNames: Record<string, string> = {
@@ -19,8 +22,8 @@ function activityLabel(key: string) {
   return activityNames[key] ?? key.replaceAll("_", " ");
 }
 
-function RecordDetails({ record, showOwner = false }: { record: HistoryRecord; showOwner?: boolean }) {
-  const { context } = useTracker();
+function RecordDetails({ record, showOwner = false, onManage }: { record: HistoryRecord; showOwner?: boolean; onManage: (id: string, action: "edit" | "delete", trigger: HTMLButtonElement) => void }) {
+  const { account, context } = useTracker();
   return <>
     {showOwner ? <p className="mb-1 text-xs font-medium text-muted-foreground">{record.display_name ?? "Team member"}</p> : null}
     <p className="font-medium">{names[record.kind]}{record.subscription_number ? ` · ${record.subscription_number}` : ""}</p>
@@ -29,14 +32,27 @@ function RecordDetails({ record, showOwner = false }: { record: HistoryRecord; s
     {record.kind === "productivity" ? <details className="mt-2"><summary className="cursor-pointer py-2 text-xs text-link underline">Source details</summary><dl className="flex flex-col gap-2 text-xs text-muted-foreground"><div><dt>Report sent</dt><dd>{record.source_sent_at ? new Date(record.source_sent_at).toLocaleString() : "Unavailable"}</dd></div><div><dt>RTF collected</dt><dd>{record.rtf_revenue_cents === null ? "Unavailable" : money(record.rtf_revenue_cents / 100)}</dd></div>{record.activity ? Object.entries(record.activity).map(([key, value]) => <div key={key}><dt>{activityLabel(key)}</dt><dd className="tabular-nums">{value === null ? "Unavailable" : key.endsWith("_cents") ? money(value / 100) : value.toLocaleString()}</dd></div>) : null}<div><dt>Imported</dt><dd>{new Date(record.recorded_at).toLocaleString()}</dd></div></dl></details> : null}
     {record.note ? <p className="mt-2 max-w-lg whitespace-pre-wrap break-words text-sm text-muted-foreground">{record.note}</p> : null}
     {record.screenshot_path ? <EvidenceViewer path={record.screenshot_path} /> : null}
+    {record.kind === "review" && (record.owner_id === account.userId || account.role === "manager") ? <div className="mt-2 flex flex-wrap gap-2"><Button variant="outline" aria-label={`Edit review from ${dateLabel(record.work_date)}`} onClick={(event) => onManage(record.id, "edit", event.currentTarget)}>Edit</Button><Button variant="ghost" className="text-destructive" aria-label={`Delete review from ${dateLabel(record.work_date)}`} onClick={(event) => onManage(record.id, "delete", event.currentTarget)}>Delete</Button></div> : null}
   </>;
 }
 
 export function History({ records, showOwner = false }: { records: HistoryRecord[]; showOwner?: boolean }) {
-  if (!records.length) return <Empty><EmptyHeader><EmptyMedia variant="icon"><Inbox aria-hidden="true" /></EmptyMedia><EmptyTitle>No records in this period</EmptyTitle><EmptyDescription>Choose another period or add a review or DoorDash subscription.</EmptyDescription></EmptyHeader></Empty>;
-  return <>
-    <div className="hidden overflow-x-auto md:block"><table className="tracker-table"><caption className="sr-only">Records in the selected period</caption><thead><tr><th scope="col">Work date</th><th scope="col">Record</th><th scope="col" className="text-right">Points</th><th scope="col" className="text-right">Separate bonus</th></tr></thead><tbody>{records.map((record) => <tr key={record.id}><td className="whitespace-nowrap">{dateLabel(record.work_date)}</td><td><RecordDetails record={record} showOwner={showOwner} /></td><td className="text-right tabular-nums">{record.points ?? "Not applicable"}</td><td className="text-right tabular-nums">{record.bonus_cents === null ? "See RTF commission" : money(record.bonus_cents / 100)}</td></tr>)}</tbody></table></div>
-    <ul className="divide-y md:hidden">{records.map((record) => <li key={record.id} className="p-4"><p className="mb-3 text-xs text-muted-foreground">{dateLabel(record.work_date)}</p><RecordDetails record={record} showOwner={showOwner} /><p className="mt-3 font-medium tabular-nums">{record.points === null ? money((record.bonus_cents ?? 0) / 100) : `${record.points} points`}</p></li>)}</ul>
-  </>;
+  const [selected, setSelected] = useState<{ id: string; action: "edit" | "delete" } | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const history = useRef<HTMLDivElement>(null);
+  function manage(id: string, action: "edit" | "delete", button: HTMLButtonElement) {
+    trigger.current = button; setSelected({ id, action });
+  }
+  function close() {
+    setSelected(null);
+    requestAnimationFrame(() => { if (trigger.current?.isConnected) trigger.current.focus(); else history.current?.focus(); });
+  }
+  return <div ref={history} tabIndex={-1} aria-label="Record history" className="outline-none">
+    {selected ? <ReviewDialog key={`${selected.id}:${selected.action}`} id={selected.id} action={selected.action} onClose={close} /> : null}
+    {!records.length ? <Empty><EmptyHeader><EmptyMedia variant="icon"><Inbox aria-hidden="true" /></EmptyMedia><EmptyTitle>No records in this period</EmptyTitle><EmptyDescription>Choose another period or add a review or DoorDash subscription.</EmptyDescription></EmptyHeader></Empty> : <>
+    <div className="hidden overflow-x-auto md:block"><table className="tracker-table"><caption className="sr-only">Records in the selected period</caption><thead><tr><th scope="col">Work date</th><th scope="col">Record</th><th scope="col" className="text-right">Points</th><th scope="col" className="text-right">Separate bonus</th></tr></thead><tbody>{records.map((record) => <tr key={record.id}><td className="whitespace-nowrap">{dateLabel(record.work_date)}</td><td><RecordDetails record={record} showOwner={showOwner} onManage={manage} /></td><td className="text-right tabular-nums">{record.points ?? "Not applicable"}</td><td className="text-right tabular-nums">{record.bonus_cents === null ? "See RTF commission" : money(record.bonus_cents / 100)}</td></tr>)}</tbody></table></div>
+    <ul className="divide-y md:hidden">{records.map((record) => <li key={record.id} className="p-4"><p className="mb-3 text-xs text-muted-foreground">{dateLabel(record.work_date)}</p><RecordDetails record={record} showOwner={showOwner} onManage={manage} /><p className="mt-3 font-medium tabular-nums">{record.points === null ? money((record.bonus_cents ?? 0) / 100) : `${record.points} points`}</p></li>)}</ul>
+    </>}
+  </div>;
 }
 

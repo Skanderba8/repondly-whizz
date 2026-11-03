@@ -164,3 +164,50 @@ Owner checks, prepared and not executed:
 - Interrupt upload before and after storage persistence, retry the same locked payload, and verify one record and one matching object. Test concurrent retry, 409 conflicts, unavailable function/settings, malformed error responses, and save success refreshing history/totals. Network uncertainty must not invite a new entry.
 
 Trusted validation checks image headers/containers and dimensions, not full decoding, malware, or the truth of a review. No total-storage quota, per-user rate limiter, automatic orphan cleanup, retention schedule, or business deduplication across new entry IDs is implemented. Do not claim those release controls are verified. Orphans remain private and the same-reference retry can recover them. Agree capacity monitoring, retention, and any scanning requirements before broader production evidence use.
+
+
+### Missing save-review function: exact deployment steps
+
+A frontend deployment does not deploy Supabase Edge Functions. If save-review is absent from the Supabase Edge Functions list, open PowerShell in this repository and run these commands one at a time:
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+npx supabase login
+npx supabase functions deploy save-review --project-ref zffaxlprvnxuqqmczhyi --use-api
+```
+
+Accept the CLI installation prompt if shown and complete the browser login. The deploy command uses the committed function entrypoint/import map and bundles its imported shared modules. It does not run a development server or require a local Docker runtime. Leave JWT verification enabled. Do not paste only index.ts into the Dashboard editor, because it imports shared files. Supabase provisions the function runtime Supabase environment variables; never add the service-role key to frontend variables. Deployment reference: https://supabase.com/docs/guides/functions/deploy.
+
+After successful deployment, confirm save-review appears under Edge Functions in project zffaxlprvnxuqqmczhyi. Return to the still-open review draft and use Retry same entry; preserve the existing request identity. If it remains unsuccessful, inspect that function's Invocations/Logs for the failed request and share only its HTTP status and safe error text, with credentials and customer data removed. If the limits migration 202611030005 was already applied, it does not need to be repeated. Otherwise open SQL Editor, paste the entire migration file, and Run after migrations 001-004.
+
+
+## Review edit/delete rollout: 2026-11-03
+
+Apply this backend change before publishing the new review actions. No hosted operations or checks were executed by the agent.
+
+1. Open Supabase project zffaxlprvnxuqqmczhyi, SQL Editor, New query. Ensure migrations 001-005 are already applied. Copy the entire contents of migrations/202611030006_review_management.sql, paste, and click Run once. This adds a version column, extends the evidence path constraint to support replacements, creates private mutation receipts and a service-only RPC, and blocks delayed recreation of deleted IDs. It does not delete or edit existing reviews during migration.
+2. Open PowerShell in the repository and run the commands below one at a time. Complete the browser login if requested. Deploy both functions because save-review now protects against deleted-reference retries. Keep JWT verification enabled.
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+npx supabase login
+npx supabase functions deploy manage-review --project-ref zffaxlprvnxuqqmczhyi --use-api
+npx supabase functions deploy save-review --project-ref zffaxlprvnxuqqmczhyi --use-api
+```
+
+3. Confirm both functions appear in Edge Functions. Publish the updated frontend via the existing release process. No additional browser grants, public bucket settings, service-key frontend variables, or direct storage write policies are needed.
+4. Verify using synthetic accounts/images only: an employee edits/deletes their own review and is denied direct requests for another employee; a manager manages both. Edit note/store/date and confirm persisted values after reloading. Replace an image and check the old object is absent and the new image is accessible under the existing owner. Leaving replacement empty must keep the existing photo. Delete a review, confirm its bonus_entries row and screenshot object are absent in the Dashboard, then verify the affected history/count/$2 amount across the old/new periods.
+5. Verify Cancel/Escape/focus behavior, mobile layout, missing backend setup, stale-version conflicts, concurrent attempts, expired membership, interrupted requests before/after database commit and during cleanup, repeated identical operation IDs, and delayed original-create retries after deletion. An uncertain dialog stays open with the same payload until retry completes. No success is shown for unfinished cleanup.
+
+Recovery: review_mutations is accessible only to trusted service/SQL operations. Inspect unfinished cleanup without changing anything:
+
+```sql
+select id, record_id, action, cleanup_paths, created_at
+from public.review_mutations
+where completed_at is null
+order by created_at;
+```
+
+Normally Retry same change completes these paths and updates completed_at. If the originating browser draft was lost, an owner must finish the listed paths using the Storage Dashboard or Storage API before marking that receipt completed in trusted SQL. Never delete rows from storage.objects to remove files; that does not remove actual stored objects. Keep receipt metadata for retry/tombstone correctness; do not purge deletion receipts without designing an equivalent permanent no-resurrection guard. No automatic cleanup worker or retention schedule is introduced. Failed pre-commit replacement uploads may remain private if a process is interrupted; owner cleanup must first confirm the path is not referenced by bonus_entries or an in-flight operation.
+
+Storage behavior follows https://supabase.com/docs/guides/storage/management/delete-objects and https://supabase.com/docs/guides/storage/schema/design. The database change and actual file removal are separate operations: pending cleanup is durable and explicit, with no completion claim until Storage API success. General backups/retention, interrupted staging-orphan cleanup, and complete content-level correction history remain separate operational requirements.

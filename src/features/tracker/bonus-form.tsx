@@ -76,6 +76,10 @@ function BonusForm({ kind }: { kind: Kind }) {
         body.set("record", JSON.stringify(parsed.data));
         body.set("screenshot", file);
         const result = await client.functions.invoke("save-review", { body });
+        if (result.error?.context instanceof Response && result.error.context.status === 404) {
+          setError("Review uploads are not set up yet. The owner needs to deploy the save-review function in Supabase. Your details have been kept; retry this same entry after setup.");
+          return;
+        }
         if (result.error?.context instanceof Response && [400, 401, 403, 413, 415, 422, 429].includes(result.error.context.status)) {
           const detail: unknown = await result.error.context.json().catch(() => null);
           setError(typeof detail === "object" && detail !== null && "error" in detail && typeof detail.error === "string" ? detail.error : "The review could not be saved. Check its fields and screenshot.");
