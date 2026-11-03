@@ -118,7 +118,7 @@ function EmployeePopup({ account, context }: { account: WorkspaceAccount; contex
   }, [account.userId]);
   useEffect(() => {
     let active = true;
-    void getSupabaseClient().rpc("tracker_snapshot", { p_owner: account.userId, p_start: start, p_end: end, p_page: 0, p_kind: null }).then((result) => {
+    void Promise.resolve(getSupabaseClient().rpc("tracker_snapshot", { p_owner: account.userId, p_start: start, p_end: end, p_page: 0, p_kind: null })).then((result) => {
       if (result.error) throw result.error;
       const parsed = snapshotSchema.parse(result.data);
       if (active) { setTotal(parsed); setFailed(false); }
