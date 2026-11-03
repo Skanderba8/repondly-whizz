@@ -1,5 +1,27 @@
 # Personal Telegram collector
 
+## Easy Windows operation: twice daily
+
+From the project folder, double-click these files in order:
+
+1. **Setup automatic scraping.cmd**: one-time credential and schedule setup. Enter TELEGRAM_API_ID, TELEGRAM_API_HASH, SUPABASE_URL, and SUPABASE_SERVICE_ROLE_KEY privately. Enter keeps an existing saved value or the current terminal's environment value. Values are encrypted using Windows DPAPI in ignored `.secrets/collector-credentials.xml`, readable by this same Windows account on this PC. Never send keys in chat. Source configuration and the project Python environment must already exist from the setup below.
+2. **Run scraper now.cmd**: performs one incremental scan, shows progress, and keeps the window open afterward. Complete Telegram sign-in if requested. This is also the manual retry button after an error.
+3. **Check scraper status.cmd**: shows whether the schedule is installed/enabled, the latest scrape result, the log location, recent log lines, and any launcher error. A scheduler exit code of zero alone does not prove a scrape happened; use the separate last-scrape state and log.
+
+The installed Windows Task Scheduler task is **Whizz Repondly daily collector**. It targets **13:00 and 18:00 America/New_York every day**, following New York daylight saving time even when Windows uses another timezone. A hidden dispatcher checks the local clock every minute without contacting Telegram or Supabase. It launches at most one automatic scrape per due slot, normally within one minute of the target time. These are one-shot scans, not `--watch` polling. Leave the PC awake, connected, and this Windows user signed in; locking the screen is fine. No terminal needs to remain open. Sleep/off/sign-out prevents on-time runs. The latest missed slot is attempted when available later that same New York day; if both were missed, one catch-up scan after 18:00 collects all new messages. There is no prior-day catch-up slot, but the next scan still imports new messages since the saved cursor.
+
+Automatic attempts, including failures, claim their slot before launching so errors do not cause scraping every minute. Use **Run scraper now.cmd** to retry, or wait for the next slot. Scheduled runs fail clearly if Telegram needs sign-in instead of waiting for invisible input. A crash/forced stop can leave a Running status; inspect the log and retry manually. A process lock prevents overlapping collector invocations, including the existing launcher/watch mode. Stop an old `--watch` process when switching to this schedule. Manual runs do not consume automatic slots.
+
+Logs, latest status, encrypted credentials, locks, and daily slot receipts are in ignored `.secrets/`; they are never uploaded to the frontend. Local logs may contain roster names and source identifiers, so keep them private. No automatic log/evidence/history deletion is introduced. Keep the project folder in place; rerun setup after moving it or changing credentials. Do not delete progress/slot files as a routine cleanup operation. The Telegram session remains a sensitive local session file under the existing setup.
+
+To turn off automation without deleting data, run from the project root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\collector\desktop.ps1 -Mode Disable
+```
+
+Setup registers the task but does not run a live import or validate credentials remotely. This implementation has not been executed or checked by the agent. Owner acceptance: setup under the intended Windows user; manual sign-in/import; status/log inspection on successful and failed scans; both New York slots and DST conversion; idle dispatcher makes no network calls; interrupted/missed slots; overlapping manual/watch/scheduled runs; duplicate/conflicting reports preserve stored totals; review/DD records unchanged. Existing database points, source matching, retry queue, date attribution, and conflict handling are retained. No migration or frontend deployment is required.
+
 This is an owner-run Python process, separate from the static Next.js app. It reads your Telegram account's configured store groups using Telethon. It sends no Telegram messages, adds no bot, and writes only allowlisted CSR results to Supabase. It has not been installed, authenticated, run, or deployed by the agent.
 
 The source roster in `config.example.json` contains only the 12 names supplied by the owner for matching. It contains no account IDs, emails, source messages, or performance data. Exact full-line name matching normalizes Unicode, whitespace, and case while preserving accents; it does not use fuzzy or substring matching. Unmapped account names are counted and skipped, never assigned to a guessed user.
@@ -97,3 +119,7 @@ For a fresh machine, create `.venv` using an installed Python and run `.\.venv\S
 ## Verification run: 2026-11-02
 
 Owner-authorized checks executed: Python 3.14.7 project environment, Telethon 1.45.0, tzdata 2026.6, launcher --help, and 11 parser/roster/topic tests all passed. A global python command is a different interpreter and need not contain project dependencies. No Telegram sign-in, messages, reports, or live Supabase writes were performed during verification.
+
+### Remove flashing PowerShell windows
+
+Double-click **Fix scraper popups.cmd** once for an existing schedule. It updates only the task action, preserving triggers, credentials, stored records, and progress. New setup uses this launcher automatically. The task starts project pythonw.exe, which launches the dispatcher with CREATE_NO_WINDOW and waits for its exit code. Manual run/status windows stay visible intentionally. Check scraper status.cmd continues to show scheduled logs and launcher errors. No task repair or verification was executed by the agent.

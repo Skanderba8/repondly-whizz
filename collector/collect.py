@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+from contextlib import contextmanager
 import json
 import os
 from datetime import date, datetime, time, timedelta, timezone
@@ -23,6 +24,36 @@ from progress import Progress, incremental_messages, stream_key
 
 class CollectorError(RuntimeError):
     pass
+
+
+@contextmanager
+def collector_lock():
+    """Protect the Telegram session and cursors across manual and scheduled runs."""
+    lock_path = Path('.secrets/collector-process.lock')
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open('a+b') as handle:
+        handle.seek(0, 2)
+        if handle.tell() == 0:
+            handle.write(b'0')
+            handle.flush()
+        handle.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise CollectorError('Another collector is already running. Stop watch mode or wait for the current scrape.') from None
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def database(method: str, table: str, filters: dict | None = None, payload: dict | None = None):
@@ -188,6 +219,7 @@ async def main():
     parser.add_argument("--since", required=True, type=date.fromisoformat, help="Earliest local work date to read (YYYY-MM-DD)")
     parser.add_argument("--watch", action="store_true", help="Repeat scans every 120 seconds while this process stays running")
     parser.add_argument("--rescan", action="store_true", help="Explicitly reread history from --since to reconcile edits or missing database rows")
+    parser.add_argument("--non-interactive", action="store_true", help="Fail instead of prompting if Telegram sign-in is required")
     roster_mode = parser.add_mutually_exclusive_group()
     roster_mode.add_argument("--mapped-team", dest="mapped_team", action="store_true", help="Use the approved team roster (default); import only exact mapped names")
     roster_mode.add_argument("--configured-roster", dest="mapped_team", action="store_false", help="Explicitly use only the local config's team_names")
@@ -202,7 +234,12 @@ async def main():
     progress = Progress(Path(".secrets/collector-progress.sqlite3"))
     client = TelegramClient(str(session_path), int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"])
     try:
-        await client.start()
+        if args.non_interactive:
+            await client.connect()
+            if not await client.is_user_authorized():
+                raise CollectorError('Telegram sign-in is required. Open Run scraper now.cmd, sign in, then retry.')
+        else:
+            await client.start()
         rescan = args.rescan
         while True:
             try:
@@ -230,7 +267,8 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        with collector_lock():
+            asyncio.run(main())
     except (CollectorError, KeyError, ValueError) as error:
         print(f"Collector stopped: {error}", flush=True)
         raise SystemExit(1) from None
