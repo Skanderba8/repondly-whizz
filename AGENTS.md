@@ -37,7 +37,8 @@
 - Finish the conversation when the requested code or documentation changes are made. Do not expand scope.
 
 ## Git and delivery
-- Use a short-lived branch per milestone or feature, with a descriptive name such as `feat/subscription-entry` or `docs/project-plan`.
+- Work directly on `main`. Do not create or switch to a feature branch unless the owner explicitly requests it. Owner preference updated 2026-11-03.
+- Whenever a migration or Supabase function deployment is required, provide exact ordered instructions, file links, and copyable commands. Clearly distinguish completed owner steps from remaining steps.
 - Use small commits with imperative messages. Do not commit secrets, real screenshots, generated build output, or local environment files.
 - Never overwrite unrelated work, force-push, or make destructive changes without explicit authorization.
 - A PR describes the outcome, acceptance criteria, data/security changes, validation results or skipped checks, and material limitations.
