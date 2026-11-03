@@ -16,6 +16,7 @@ import { dateLabel, localDate, type Snapshot, type Period } from "./domain";
 import { chartBucket, presetRange, rangeDays, rangeOptions, reportingRangeSchema, type RangePreset, type Reporting, type ReportingRange } from "./reporting";
 import { History } from "./history";
 import { DashboardAnalytics } from "./dashboard-analytics";
+import { MonthlyRecords } from "./monthly-records";
 
 export function PerformancePage({ historyOnly = false }: { historyOnly?: boolean }) {
   const { account, context } = useTracker();
@@ -24,6 +25,10 @@ export function PerformancePage({ historyOnly = false }: { historyOnly?: boolean
 }
 
 export function Performance({ historyOnly, kind }: { historyOnly: boolean; kind?: "review" | "doordash" }) {
+  return kind ? <MonthlyRecords kind={kind} /> : <ReportingPerformance historyOnly={historyOnly} />;
+}
+
+function ReportingPerformance({ historyOnly, kind }: { historyOnly: boolean; kind?: "review" | "doordash" }) {
   const { account, context, loadSnapshot, loadReporting, invalidate, version } = useTracker();
   const [owner, setOwner] = useState(account.userId);
   const [calendarId, setCalendarId] = useState("");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Dialog } from "radix-ui";
+import { RecordDialog } from "@/components/ui/record-dialog";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -111,11 +111,7 @@ export function ReviewDialog({ id, action, onClose }: { id: string; action: "edi
     } finally { inFlight.current = false; setBusy(false); }
   }
 
-  return <Dialog.Root open onOpenChange={(open) => { if (!open && !locked) onClose(); }}><Dialog.Portal>
-    <Dialog.Overlay className="sheet-overlay" />
-    <Dialog.Content onEscapeKeyDown={(event) => { if (locked) event.preventDefault(); }} onPointerDownOutside={(event) => event.preventDefault()} className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-32px)] w-[calc(100%-32px)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border bg-card p-4 sm:p-6">
-      <Dialog.Title className="section-title">{action === "edit" ? "Edit review" : "Delete review?"}</Dialog.Title>
-      <Dialog.Description className="mt-2 text-sm text-muted-foreground">{action === "edit" ? "Update the review details or replace its screenshot." : "This permanently removes the review and its screenshot, and subtracts $2 from the applicable tracking totals. This cannot be undone."}</Dialog.Description>
+  return <RecordDialog title={action === "edit" ? "Edit review" : "Delete review?"} description={action === "edit" ? "Update the review details or replace its screenshot." : "This permanently removes the review and its screenshot, and subtracts $2 from the applicable tracking totals. This cannot be undone."} locked={locked} onClose={onClose}>
       {complete ? <div className="mt-6 space-y-5"><p role="status" className="text-sm text-success-foreground">{action === "delete" ? "Review and screenshot deleted." : "Review updated. Screenshot cleanup completed."}</p><Button ref={doneButton} onClick={onClose}>Done</Button></div> : <form onSubmit={submit} aria-busy={busy || loading} className="mt-6 space-y-5">
         {loading ? <p role="status" className="text-sm text-muted-foreground">Loading review...</p> : null}
         {message ? <div ref={feedback} tabIndex={-1} role="alert" className="rounded-md border border-destructive p-3 text-sm">{message}{canReload && !uncertain ? <Button type="button" variant="link" className="mt-2" onClick={reloadReview}>Reload review</Button> : null}</div> : null}
