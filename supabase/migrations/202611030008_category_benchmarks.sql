@@ -1,7 +1,7 @@
 begin;
 
 -- Expose only category maxima, never peer identities or individual source rows.
-create function public.tracker_category_benchmarks(p_start date, p_end date)
+create or replace function public.tracker_category_benchmarks(p_start date, p_end date)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 begin
   if auth.uid() is null or not exists (

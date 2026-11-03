@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { PerformancePage } from "@/features/tracker/performance";
+import { ActivityPage as ActivityRecords } from "@/features/tracker/activity-page";
 
 export const metadata: Metadata = { title: "Activity" };
 
 export default function ActivityPage() {
-  return <PerformancePage historyOnly />;
+  return <ActivityRecords />;
 }

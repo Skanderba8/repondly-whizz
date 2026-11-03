@@ -104,7 +104,9 @@ export function ReviewDialog({ id, action, onClose }: { id: string; action: "edi
       const confirmation = z.object({ id: z.uuid(), operation_id: z.uuid(), action: z.enum(["edit", "delete"]), complete: z.literal(true) }).safeParse(result.data);
       if (result.error || !confirmation.success || confirmation.data.id !== id
         || confirmation.data.operation_id !== operation.current || confirmation.data.action !== action) throw new Error();
-      setUncertain(false); setComplete(true); invalidate();
+      setUncertain(false); invalidate();
+      if (action === "delete") onClose();
+      else setComplete(true);
     } catch {
       setUncertain(true);
       setMessage("The change was not confirmed. Retry this same change to check or finish it. Your details are kept here.");

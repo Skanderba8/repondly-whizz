@@ -13,15 +13,16 @@ type SelectProps = Omit<ComponentProps<typeof SelectPrimitive.Trigger>, "childre
   placeholder?: string;
   name?: string;
   required?: boolean;
+  showAllOptions?: boolean;
 };
 
-export function Select({ value, onValueChange, options, placeholder = "Choose an option", name, required, disabled, className, ...props }: SelectProps) {
+export function Select({ value, onValueChange, options, placeholder = "Choose an option", name, required, disabled, className, showAllOptions = false, ...props }: SelectProps) {
   return <SelectPrimitive.Root value={value} onValueChange={onValueChange} name={name} required={required} disabled={disabled}>
     <SelectPrimitive.Trigger className={cn("form-control flex items-center justify-between gap-3 text-left", className)} {...props}>
       <span className="min-w-0 truncate"><SelectPrimitive.Value placeholder={placeholder} /></span>
       <SelectPrimitive.Icon asChild><ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" /></SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
-    <SelectPrimitive.Portal><SelectPrimitive.Content position="popper" sideOffset={6} collisionPadding={12} className="select-content">
+    <SelectPrimitive.Portal><SelectPrimitive.Content position="popper" sideOffset={6} collisionPadding={12} className="select-content" data-expanded={showAllOptions}>
       <SelectPrimitive.ScrollUpButton className="select-scroll"><ChevronUp aria-hidden="true" className="size-4" /></SelectPrimitive.ScrollUpButton>
       <SelectPrimitive.Viewport className="p-1"><SelectPrimitive.Group>
         {options.map((option) => <SelectPrimitive.Item key={option.value} value={option.value} disabled={option.disabled} className="select-item">

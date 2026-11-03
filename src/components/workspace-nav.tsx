@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
-  { href: "/activity/", label: "Activity", icon: ListChecks },
   { href: "/reviews/", label: "Reviews", icon: MessageSquareText },
   { href: "/doordash/", label: "DoorDash", icon: Bike },
+  { href: "/activity/", label: "Activity", icon: ListChecks },
 ];
 
 export function WorkspaceNav({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {

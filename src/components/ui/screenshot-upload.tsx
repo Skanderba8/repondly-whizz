@@ -7,6 +7,7 @@ import { inspectScreenshot, screenshotDimensionsAllowed, screenshotMaxBytes, scr
 
 type Props = {
   id?: string;
+  compact?: boolean;
   file: File | null;
   limit: number | null | undefined;
   disabled: boolean;
@@ -16,7 +17,7 @@ type Props = {
   onProcessing: (processing: boolean) => void;
 };
 
-export function ScreenshotUpload({ id = "review-screenshot", file, limit, disabled, error, onChange, onError, onProcessing }: Props) {
+export function ScreenshotUpload({ id = "review-screenshot", compact = false, file, limit, disabled, error, onChange, onError, onProcessing }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   const dragDepth = useRef(0);
@@ -71,19 +72,20 @@ export function ScreenshotUpload({ id = "review-screenshot", file, limit, disabl
 
   return <div className="space-y-3">
     <input ref={input} className="hidden" type="file" accept="image/png,image/jpeg,image/webp" disabled={unavailable} aria-label="Choose review screenshot" onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ""; if (files.length) void selectFiles(files); }} />
-    <button id={id} type="button" disabled={unavailable} aria-label={file ? "Replace review screenshot" : "Upload review screenshot"} aria-busy={processing} aria-invalid={!!error} aria-describedby={`${id}-help ${id}-error`} onClick={() => input.current?.click()}
+    <button id={id} type="button" disabled={unavailable} aria-label={file ? "Replace review screenshot" : "Upload review screenshot"} aria-busy={processing} aria-invalid={!!error} aria-describedby={maxBytes ? `${id}-error` : `${id}-help ${id}-error`} onClick={() => input.current?.click()}
       onDragEnter={(event) => { event.preventDefault(); if (!unavailable) { dragDepth.current++; setDragging(true); } }}
       onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = unavailable ? "none" : "copy"; }}
       onDragLeave={(event) => { event.preventDefault(); dragDepth.current = Math.max(0, dragDepth.current - 1); if (!dragDepth.current) setDragging(false); }}
       onDrop={(event) => { event.preventDefault(); dragDepth.current = 0; setDragging(false); if (!unavailable) void selectFiles(Array.from(event.dataTransfer.files)); }}
       className={[
-        "group relative flex min-h-72 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors duration-150 sm:min-h-88 sm:py-10 motion-reduce:transition-none",
+        "group relative flex w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed px-6 text-center transition-colors duration-150 motion-reduce:transition-none",
+        compact ? "min-h-[clamp(160px,25dvh,240px)] py-4" : "min-h-72 py-8 sm:min-h-88 sm:py-10",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed",
         dragging ? "border-link bg-accent text-accent-foreground" : error ? "border-destructive bg-card text-foreground enabled:hover:bg-muted" : "border-input bg-muted/40 text-foreground enabled:hover:border-link enabled:hover:bg-accent/50",
       ].join(" ")}>
-      <span className={`pointer-events-none flex w-full flex-col items-center gap-5 ${dragging ? "invisible" : ""}`}>
+      <span className={`pointer-events-none flex w-full flex-col items-center ${compact ? "gap-3" : "gap-5"} ${dragging ? "invisible" : ""}`}>
         {file ? <>
-          <img ref={preview} alt="Selected review screenshot" className="h-44 max-w-full rounded-md object-contain sm:h-52" />
+          <img ref={preview} alt="Selected review screenshot" className={compact ? "h-24 max-w-full rounded-md object-contain" : "h-44 max-w-full rounded-md object-contain sm:h-52"} />
           <span className="flex items-center gap-2 text-sm font-medium"><Check className="size-4 text-link" aria-hidden="true" />Screenshot selected</span>
           <span className="text-sm text-muted-foreground">Click or drop another image to replace</span>
         </> : <>
@@ -92,16 +94,15 @@ export function ScreenshotUpload({ id = "review-screenshot", file, limit, disabl
             <span className="block text-base font-semibold sm:text-lg">{processing ? "Preparing your screenshot" : "Drop your screenshot here"}</span>
             <span className="block text-sm text-muted-foreground">{processing ? "Keeping it clear and reducing file size" : <>or <span className="font-medium text-link underline decoration-link/40 underline-offset-4 group-hover:decoration-link">browse files</span> on your computer</>}</span>
           </span>
-          <span className="text-xs text-muted-foreground">PNG, JPG or WebP{maxBytes ? ` · Up to ${maxBytes / 1024 / 1024} MB` : ""}</span>
         </>}
       </span>
       {dragging ? <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-5 px-6" aria-hidden="true"><ArrowUpToLine strokeWidth={1.5} className="size-14 text-link" /><span className="text-lg font-semibold">Drop to {file ? "replace" : "add"} screenshot</span><span className="text-sm">Release your file here</span></span> : null}
       {processing && file ? <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 bg-card/95 text-sm font-medium"><LoaderCircle className="size-8 animate-spin text-link motion-reduce:animate-none" aria-hidden="true" />Preparing replacement...</span> : null}
     </button>
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <p id={`${id}-help`} className="max-w-xl text-xs leading-relaxed text-muted-foreground">{maxBytes ? "Upload one screenshot of the review. Crop out unrelated customer details. Maximum 24 megapixels." : "Uploads will be available once screenshot storage is configured."}</p>
+    {file || !maxBytes ? <div className="flex flex-wrap items-start justify-between gap-3">
+      {!maxBytes ? <p id={`${id}-help`} className="max-w-xl text-xs leading-relaxed text-muted-foreground">Uploads will be available once screenshot storage is configured.</p> : null}
       {file ? <Button type="button" variant="ghost" disabled={unavailable} className="shrink-0" onClick={() => { onChange(null); onError(""); }}>Remove screenshot</Button> : null}
-    </div>
+    </div> : null}
     {file ? <p className="break-words text-xs text-muted-foreground">{file.name} · {(file.size / 1024 / 1024).toLocaleString(undefined, { maximumFractionDigits: 2 })} MB · Uploads when you save</p> : null}
     <p id={`${id}-error`} className={error ? "text-sm text-destructive" : "sr-only"}>{error}</p>
     <span className="sr-only" role="status">{dragging ? "Drop your screenshot now" : processing ? "Preparing screenshot" : file ? "Screenshot selected. It uploads when you save the review." : "No screenshot selected"}</span>

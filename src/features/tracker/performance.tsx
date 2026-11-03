@@ -10,24 +10,23 @@ import { Select } from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTracker } from "./tracker-provider";
 import { TrackerGate } from "./tracker-gate";
-import { dateLabel, localDate, shiftDate, type Snapshot } from "./domain";
+import { dateLabel, localDate, money, pointsLabel, shiftDate, type Snapshot } from "./domain";
 import { chartBucket, presetRange, type Reporting, type ReportingRange } from "./reporting";
 import { History } from "./history";
 import { DashboardAnalytics } from "./dashboard-analytics";
-import { MonthlyRecords } from "./monthly-records";
 import { PeriodPicker } from "./period-picker";
 
 export function PerformancePage({ historyOnly = false }: { historyOnly?: boolean }) {
   const { account, context } = useTracker();
   const name = context?.people.find((person) => person.user_id === account.userId)?.display_name.split(/\s+/)[0];
-  return <><PageHeading title={historyOnly ? "Activity" : name ? `Welcome, ${name}` : "Welcome"} description={historyOnly ? "Your records and their source totals." : "Points, bonuses, and estimated earnings."} action={<div className="flex flex-wrap gap-2"><Button asChild><Link href="/reviews/"><MessageSquareText aria-hidden="true" />Reviews</Link></Button><Button variant="delivery" asChild><Link href="/doordash/"><Bike aria-hidden="true" />Add DoorDash</Link></Button></div>} /><TrackerGate><Performance historyOnly={historyOnly} /></TrackerGate></>;
+  return <><PageHeading title={historyOnly ? "Activity" : name ? `Welcome, ${name}` : "Welcome"} description={historyOnly ? "Your records and their source totals." : "Points, bonuses, and estimated earnings."} action={<div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:min-w-[340px]"><Button size="workspace" asChild><Link href="/reviews/"><MessageSquareText aria-hidden="true" />Reviews</Link></Button><Button size="workspace" variant="delivery" asChild><Link href="/doordash/"><Bike aria-hidden="true" />Add DoorDash</Link></Button></div>} /><TrackerGate><Performance historyOnly={historyOnly} /></TrackerGate></>;
 }
 
-export function Performance({ historyOnly, kind }: { historyOnly: boolean; kind?: "review" | "doordash" }) {
-  return kind ? <MonthlyRecords kind={kind} /> : <ReportingPerformance historyOnly={historyOnly} />;
+export function Performance({ historyOnly, kind }: { historyOnly: boolean; kind?: "review" | "doordash" | "productivity" }) {
+  return <ReportingPerformance historyOnly={historyOnly} kind={kind} />;
 }
 
-function ReportingPerformance({ historyOnly }: { historyOnly: boolean }) {
+function ReportingPerformance({ historyOnly, kind }: { historyOnly: boolean; kind?: "review" | "doordash" | "productivity" }) {
   const { account, context, loadSnapshot, loadReporting, invalidate, version } = useTracker();
   const [owner, setOwner] = useState(account.userId);
   const person = context?.people.find((row) => row.user_id === owner);
@@ -41,7 +40,7 @@ function ReportingPerformance({ historyOnly }: { historyOnly: boolean }) {
   const range = preset === "custom" && custom ? custom : preset === "yesterday" ? { start: yesterday, end: yesterday } : presetRange(preset === "week" ? "week" : "month", today);
   const { start, end } = range;
   const bucket = chartBucket(range);
-  const scopeKey = `${owner}:${start}:${end}`;
+  const scopeKey = `${owner}:${start}:${end}:${kind ?? "all"}`;
   const [pagination, setPagination] = useState({ key: "", page: 0 });
   const page = pagination.key === scopeKey ? pagination.page : 0;
   const key = historyOnly ? `${scopeKey}:${page}:${version}` : `${scopeKey}:${version}`;
@@ -57,7 +56,11 @@ function ReportingPerformance({ historyOnly }: { historyOnly: boolean }) {
     let active = true;
     async function load() {
       try {
-        const snapshot = historyOnly ? await loadSnapshot(owner, start, end, page) : null;
+        const snapshot = historyOnly ? await loadSnapshot(owner, start, end, page, kind) : null;
+        if (active && snapshot && page > 0 && page * 25 >= snapshot.history_count) {
+          setPagination({ key: scopeKey, page: Math.max(0, Math.ceil(snapshot.history_count / 25) - 1) });
+          return;
+        }
         const reporting = historyOnly ? null : await loadReporting(owner, start, end, bucket);
         if (active) setResult({ key, viewKey, snapshot, reporting });
       } catch {
@@ -66,7 +69,7 @@ function ReportingPerformance({ historyOnly }: { historyOnly: boolean }) {
     }
     void load();
     return () => { active = false; };
-  }, [historyOnly, owner, start, end, page, bucket, key, viewKey, loadSnapshot, loadReporting]);
+  }, [historyOnly, kind, owner, start, end, page, bucket, key, viewKey, scopeKey, loadSnapshot, loadReporting]);
 
   const controls = <div className="flex flex-wrap items-center gap-2">
     <SegmentedControl label="Date range" value={preset === "custom" ? "" : preset} onValueChange={setPreset} options={[{ value: "month", label: "This month" }, { value: "week", label: "This week" }, { value: "yesterday", label: "Yesterday" }]} />
@@ -84,14 +87,20 @@ function ReportingPerformance({ historyOnly }: { historyOnly: boolean }) {
   </div>;
 
   return <WorkspacePanel id="history-title" title="Records" action={controls}>
-    <div className={historyOnly ? undefined : "overview-panel-content"}>
+    <div>
       {error ? <div role="alert" className="px-4 py-3"><p className="text-sm">{error}{visible ? " Showing the last loaded values for this period." : ""}</p><Button variant="outline" onClick={invalidate} className="mt-2">Retry</Button></div> : null}
       {visible?.snapshot ? <>
-        <History records={visible.snapshot.history} showOwner={owner === "team"} />
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4"><p className="text-xs text-muted-foreground">Page {page + 1} of {Math.max(1, Math.ceil(visible.snapshot.history_count / 25))}</p><div className="flex gap-2"><Button variant="outline" disabled={page === 0} onClick={() => setPagination({ key: scopeKey, page: page - 1 })}>Previous</Button><Button variant="outline" disabled={(page + 1) * 25 >= visible.snapshot.history_count} onClick={() => setPagination({ key: scopeKey, page: page + 1 })}>Next</Button></div></div>
+        <dl className="flex flex-wrap gap-x-8 gap-y-3 border-y bg-muted/30 px-4 py-3">
+          <div><dt className="text-xs text-muted-foreground">Records</dt><dd className="text-lg font-semibold tabular-nums">{visible.snapshot.history_count.toLocaleString()}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Bonuses</dt><dd className="text-lg font-semibold tabular-nums">{money(kind === "review" ? visible.snapshot.review_cents / 100 : kind === "doordash" ? visible.snapshot.doordash_cents / 100 : (visible.snapshot.commission ?? 0) + (kind === "productivity" ? 0 : (visible.snapshot.review_cents + visible.snapshot.doordash_cents) / 100))}</dd></div>
+          {!kind || kind === "productivity" ? <div><dt className="text-xs text-muted-foreground">Total points</dt><dd className="text-lg font-semibold tabular-nums">{pointsLabel(visible.snapshot.points ?? 0)}</dd></div> : null}
+        </dl>
+        <History records={visible.snapshot.history} showOwner={owner === "team"} hidePoints={kind === "review" || kind === "doordash"} recordKind={kind === "review" || kind === "doordash" ? kind : undefined} />
+        {visible.snapshot.history_count > 25 ? <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4"><p className="text-xs text-muted-foreground">Page {page + 1} of {Math.max(1, Math.ceil(visible.snapshot.history_count / 25))}</p><div className="flex gap-2"><Button variant="outline" disabled={page === 0} onClick={() => setPagination({ key: scopeKey, page: page - 1 })}>Previous</Button><Button variant="outline" disabled={(page + 1) * 25 >= visible.snapshot.history_count} onClick={() => setPagination({ key: scopeKey, page: page + 1 })}>Next</Button></div></div> : null}
       </> : null}
       {!visible && !error ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">Loading {dateLabel(start)} to {dateLabel(end)}...</p> : null}
       <span role="status" className="sr-only">{pending && visible ? "Updating selected period" : ""}</span>
     </div>
   </WorkspacePanel>;
 }
+

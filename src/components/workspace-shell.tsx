@@ -50,7 +50,7 @@ export function WorkspaceShell({ children, account, onSignOut }: {
   }
 
   return (
-    <div className="workspace-layout min-h-svh" data-collapsed={collapsed} data-overview={pathname === "/"}>
+    <div className="workspace-layout min-h-svh" data-collapsed={collapsed} data-overview={pathname === "/"} data-compact={["", "/reviews", "/doordash"].includes(pathname.replace(/\/$/, ""))}>
       <a href="#main-content" className="skip-link">Skip to content</a>
       <aside className="workspace-sidebar" aria-label="Workspace sidebar">
         <div className="flex min-h-8 items-center justify-between gap-1 px-1">
