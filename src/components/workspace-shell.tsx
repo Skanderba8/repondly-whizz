@@ -8,6 +8,7 @@ import { Dialog } from "radix-ui";
 import { Brand } from "@/components/brand";
 import { AccountMenu } from "@/components/account-menu";
 import { WorkspaceNav } from "@/components/workspace-nav";
+import { ChromeExtensionLink } from "@/components/chrome-extension-link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { WorkspaceAccount } from "@/features/access/access";
@@ -24,8 +25,8 @@ export function WorkspaceShell({ children, account, onSignOut }: {
   const sidebarRef = useRef<HTMLElement>(null);
   const navigationRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const destinations: Record<string, string> = { "": "Overview", "/activity": "Activity", "/reviews": "Reviews", "/doordash": "DoorDash" };
-  const managerDestinations: Record<string, string> = { "": "Team overview", "/people": "Employees", "/reviews": "All reviews", "/doordash": "All DoorDash", "/activity": "Team activity" };
+  const destinations: Record<string, string> = { "": "Overview", "/activity": "Activity", "/reviews": "Reviews", "/doordash": "DoorDash", "/extension": "Chrome extension" };
+  const managerDestinations: Record<string, string> = { "": "Team overview", "/people": "Employees", "/reviews": "All reviews", "/doordash": "All DoorDash", "/activity": "Team activity", "/extension": "Chrome extension" };
   const context = (account.role === "manager" ? managerDestinations : destinations)[pathname.replace(/\/$/, "")] ?? "Workspace";
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export function WorkspaceShell({ children, account, onSignOut }: {
           </Button>
         </div>
         <div ref={navigationRef} id="desktop-navigation" className="workspace-sidebar-navigation mt-6"><WorkspaceNav role={account.role} collapsed={collapsed} /></div>
-        <div className="shrink-0 pt-4"><Separator className="mb-4" /><AccountMenu account={account} onSignOut={onSignOut} /></div>
+        <div className="shrink-0 pt-4"><ChromeExtensionLink collapsed={collapsed} /><Separator className="my-3" /><AccountMenu account={account} onSignOut={onSignOut} /></div>
       </aside>
       <div className="workspace-body">
         <header className="workspace-topbar">
@@ -95,7 +96,7 @@ export function WorkspaceShell({ children, account, onSignOut }: {
                     <Dialog.Close asChild><Button variant="ghost" size="icon" aria-label="Close navigation"><X aria-hidden="true" /></Button></Dialog.Close>
                   </div>
                   <div className="workspace-sidebar-navigation mt-6"><WorkspaceNav role={account.role} onNavigate={() => setMobileOpen(false)} /></div>
-                  <div className="shrink-0 pt-4"><Separator className="mb-4" /><p className="break-all px-3 text-sm">{account.role === "manager" ? "Manager workspace" : account.email}</p><p className="px-3 text-xs text-muted-foreground">{account.role === "manager" ? "Manager" : "Employee"}</p></div>
+                  <div className="shrink-0 pt-4"><ChromeExtensionLink onNavigate={() => setMobileOpen(false)} /><Separator className="my-3" /><p className="break-all px-3 text-sm">{account.role === "manager" ? "Manager workspace" : account.email}</p><p className="px-3 text-xs text-muted-foreground">{account.role === "manager" ? "Manager" : "Employee"}</p></div>
                 </Dialog.Content>
               </Dialog.Portal>
             </Dialog.Root>

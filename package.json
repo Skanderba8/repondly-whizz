@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:extension": "vite build --config extension/vite.config.ts",
+    "package:extension": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-extension.ps1",
     "build:cloudflare": "node scripts/validate-deployment-env.mjs && next build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

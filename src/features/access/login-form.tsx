@@ -10,7 +10,7 @@ import { ArrowRight, LoaderCircle } from "lucide-react";
 import { AccessFrame } from "@/components/access-frame";
 import { Separator } from "@/components/ui/separator";
 
-export function LoginForm() {
+export function LoginForm({ compact = false }: { compact?: boolean }) {
   const busy = useRef(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const [pending, setPending] = useState(false);
@@ -47,11 +47,11 @@ export function LoginForm() {
   }
 
   return (
-    <AccessFrame>
+    <AccessFrame compact={compact}>
       <section aria-labelledby="login-title" className="access-panel">
-        <span aria-hidden="true" className="mb-6 block h-1 w-8 rounded-full bg-primary" />
-        <h1 id="login-title" className="page-title">Log in to your workspace</h1>
-        <p id="login-help" className="mt-3 text-sm leading-6 text-muted-foreground">Use the work email and password provided by your workspace owner.</p>
+        {compact ? null : <span aria-hidden="true" className="mb-6 block h-1 w-8 rounded-full bg-primary" />}
+        <h1 id="login-title" className="page-title">{compact ? "Log in" : "Log in to your workspace"}</h1>
+        <p id="login-help" className="mt-3 text-sm leading-6 text-muted-foreground">{compact ? "Use your Whizz work email and password." : "Use the work email and password provided by your workspace owner."}</p>
         <form onSubmit={handleSubmit} aria-describedby="login-help" className="mt-8">
           <FieldGroup>
             <Field>

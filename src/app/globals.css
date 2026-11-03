@@ -1,4 +1,7 @@
 @import "tailwindcss";
+
+@source "../../extension/src";
+@source "../../extension/popup.html";
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -303,3 +306,35 @@
   .workspace-layout[data-collapsed="false"] .workspace-sidebar { box-shadow: var(--shadow-popover); }
 }
 
+
+@layer components {
+  /* Chrome measures the document to size its popup. Do not cap this width to the initial viewport. */
+  html.popup-document { width: 440px; min-width: 440px; max-width: 440px; height: 600px; overflow: hidden; scrollbar-gutter: auto; --font-geist: ui-sans-serif, system-ui, sans-serif; }
+  body.extension-popup { @apply m-0 h-full overflow-hidden text-sm; width: 440px; min-width: 440px; }
+  .extension-popup #root { @apply h-full w-full min-w-0; }
+  .popup-shell { @apply flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden; }
+  .popup-header { @apply flex shrink-0 items-center justify-between gap-3 border-b bg-card px-3 py-1; }
+  .popup-header .brand { @apply gap-2; }
+  .popup-main { @apply flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain p-4; scrollbar-gutter: stable; }
+  .popup-main > * { @apply min-w-0 shrink-0; }
+  .popup-main .page-heading { @apply gap-2; }
+  .popup-main .page-title, .popup-access .page-title { @apply text-2xl leading-8; }
+  .popup-main .page-description { @apply mt-1 text-xs leading-5; }
+  .popup-totals { @apply flex flex-col gap-1 border-b pb-2 text-xs leading-4 text-muted-foreground; }
+  .popup-main[data-entry="true"] { @apply gap-2 p-3; scrollbar-gutter: auto; }
+  .popup-main[data-entry="true"] > .panel { @apply border-0 bg-transparent; }
+  .popup-main[data-entry="true"] .panel-header { @apply sr-only; }
+  .popup-main[data-entry="true"] .segmented-item { @apply min-h-10; }
+  .popup-main[data-entry="true"] .popup-entry-form { @apply gap-2 p-0 pt-1; }
+  .popup-main[data-entry="true"] .popup-entry-form > div:last-child { @apply mt-1 pt-2; }
+  .popup-main .panel-header { @apply px-4 py-3; }
+  .popup-main .section-title { @apply text-base leading-6; }
+  .popup-entry-form { @apply flex flex-col gap-3 px-4 pb-4; }
+  .popup-entry-form .date-input { @apply min-h-11 pr-10 text-sm; }
+  .popup-entry-form .form-control { @apply text-sm; }
+  .popup-footer { @apply flex shrink-0 items-center justify-between gap-3 border-t bg-card px-4 py-2; }
+  .popup-access { @apply flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain p-5; }
+  .popup-access .access-panel { @apply my-auto min-w-0 shrink-0 rounded-xl border bg-card p-5; }
+  .popup-access #login-help { @apply mt-2; }
+  .popup-access form { @apply mt-5; }
+}

@@ -1,7 +1,8 @@
 import { LockKeyhole } from "lucide-react";
 import { Brand } from "@/components/brand";
 
-export function AccessFrame({ children }: { children: React.ReactNode }) {
+export function AccessFrame({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
+  if (compact) return <main id="main-content" className="popup-access">{children}</main>;
   return (
     <div className="access-layout">
       <a href="#main-content" className="skip-link">Skip to content</a>

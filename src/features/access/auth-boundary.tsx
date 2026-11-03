@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { WorkspaceShell } from "@/components/workspace-shell";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -15,6 +16,12 @@ type AccessState =
   | { status: "ready" | "checking"; account: WorkspaceAccount };
 
 export function AuthBoundary({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  if (pathname.replace(/\/$/, "") === "/extension/privacy") return <>{children}</>;
+  return <WorkspaceAuthBoundary>{children}</WorkspaceAuthBoundary>;
+}
+
+function WorkspaceAuthBoundary({ children }: { children: React.ReactNode }) {
   const [access, setAccess] = useState<AccessState>({ status: "loading" });
   const [revision, setRevision] = useState(0);
   const [signingOut, setSigningOut] = useState(false);

@@ -51,6 +51,7 @@ Add these to the **Production** environment in Pages, using the existing Supabas
 | `NODE_VERSION` | `24` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Existing project's HTTPS API URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Existing project's `sb_publishable_...` key |
+| `NEXT_PUBLIC_CHROME_EXTENSION_URL` | Optional: approved `https://chromewebstore.google.com/detail/...` listing URL. Leave blank until available. |
 
 The new build command reuses the app's environment schema and stops before Next.js builds when either Supabase value is missing or invalid. It does not contact Supabase or print either value. It expects dashboard environment variables; it does not load `.env.local` itself. Node 24 runs the shared TypeScript schema through its built-in type stripping.
 
