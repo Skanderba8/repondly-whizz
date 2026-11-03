@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ListChecks, MessageSquareText, Bike } from "lucide-react";
+import { LayoutDashboard, ListChecks, MessageSquareText, Bike, Users } from "lucide-react";
 import { Tooltip } from "radix-ui";
 import { cn } from "@/lib/utils";
+import type { AccessRole } from "@/features/access/access";
 
 const items = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -13,12 +14,20 @@ const items = [
   { href: "/activity/", label: "Activity", icon: ListChecks },
 ];
 
-export function WorkspaceNav({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
+const managerItems = [
+  { href: "/", label: "Team overview", icon: LayoutDashboard },
+  { href: "/people/", label: "Employees", icon: Users },
+  { href: "/reviews/", label: "All reviews", icon: MessageSquareText },
+  { href: "/doordash/", label: "All DoorDash", icon: Bike },
+  { href: "/activity/", label: "Team activity", icon: ListChecks },
+];
+
+export function WorkspaceNav({ role = "employee", collapsed = false, onNavigate }: { role?: AccessRole; collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Workspace" className="flex flex-col gap-1">
       <Tooltip.Provider delayDuration={400}>
-        {items.map(({ href, label, icon: Icon }) => {
+        {(role === "manager" ? managerItems : items).map(({ href, label, icon: Icon }) => {
           const active = pathname.replace(/\/$/, "") === href.replace(/\/$/, "");
           return (
             <Tooltip.Root key={href}>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { Bike, MessageSquareText, RefreshCw } from "lucide-react";
 import { PageHeading } from "@/components/page-heading";
@@ -16,9 +17,12 @@ import { History } from "./history";
 import { DashboardAnalytics } from "./dashboard-analytics";
 import { PeriodPicker } from "./period-picker";
 
+const ManagerDashboard = dynamic(() => import("@/features/manager/manager-dashboard").then((module) => module.ManagerDashboard));
+
 export function PerformancePage({ historyOnly = false }: { historyOnly?: boolean }) {
   const { account, context } = useTracker();
   const name = context?.people.find((person) => person.user_id === account.userId)?.display_name.split(/\s+/)[0];
+  if (account.role === "manager" && !historyOnly) return <ManagerDashboard />;
   return <><PageHeading title={historyOnly ? "Activity" : name ? `Welcome, ${name}` : "Welcome"} description={historyOnly ? "Your records and their source totals." : "Points, bonuses, and estimated earnings."} action={<div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:min-w-[340px]"><Button size="workspace" asChild><Link href="/reviews/"><MessageSquareText aria-hidden="true" />Reviews</Link></Button><Button size="workspace" variant="delivery" asChild><Link href="/doordash/"><Bike aria-hidden="true" />Add DoorDash</Link></Button></div>} /><TrackerGate><Performance historyOnly={historyOnly} /></TrackerGate></>;
 }
 

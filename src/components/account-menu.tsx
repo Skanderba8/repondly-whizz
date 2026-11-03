@@ -19,19 +19,20 @@ export function AccountMenu({ account, onSignOut, compact = false }: {
 }) {
   const { appearance, setAppearance } = useAppearance();
   const role = account.role === "manager" ? "Manager" : "Employee";
-  const initials = account.email.slice(0, 2).toUpperCase() || "W";
+  const accountLabel = account.role === "manager" ? "Manager workspace" : account.email;
+  const initials = account.role === "manager" ? "M" : account.email.slice(0, 2).toUpperCase() || "W";
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button type="button" className="account-trigger" aria-label="Account and appearance">
           <span className="avatar" aria-hidden="true">{initials}</span>
-          {!compact ? <><span className="sidebar-label min-w-0 flex-1"><span className="block truncate text-sm font-medium">{account.email}</span><span className="block text-xs text-muted-foreground">{role}</span></span><ChevronsUpDown aria-hidden="true" className="sidebar-label size-4 shrink-0 text-muted-foreground" /></> : null}
+          {!compact ? <><span className="sidebar-label min-w-0 flex-1"><span className="block truncate text-sm font-medium">{accountLabel}</span><span className="block text-xs text-muted-foreground">{role}</span></span><ChevronsUpDown aria-hidden="true" className="sidebar-label size-4 shrink-0 text-muted-foreground" /></> : null}
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={8} collisionPadding={16} className="menu-content">
-          <DropdownMenu.Label className="menu-label"><span className="block break-all text-foreground">{account.email}</span><span>{role}</span></DropdownMenu.Label>
+          <DropdownMenu.Label className="menu-label"><span className="block break-all text-foreground">{accountLabel}</span><span>{role}</span></DropdownMenu.Label>
           <Separator className="my-2" />
           <DropdownMenu.Label className="menu-label">Appearance</DropdownMenu.Label>
           <DropdownMenu.RadioGroup value={appearance} onValueChange={(value) => setAppearance(value as Appearance)}>

@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { PageHeading } from "@/components/page-heading";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { TrackerGate } from "./tracker-gate";
 import { Performance } from "./performance";
+import { useTracker } from "./tracker-provider";
+
+const ManagerDashboard = dynamic(() => import("@/features/manager/manager-dashboard").then((module) => module.ManagerDashboard));
 
 export function ActivityPage() {
+  const { account } = useTracker();
   const [filter, setFilter] = useState<string | null>(null);
   useEffect(() => {
     function readFilter() {
@@ -21,6 +26,7 @@ export function ActivityPage() {
     setFilter(value);
     window.history.replaceState(null, "", `#${value}`);
   }
+  if (account.role === "manager") return <ManagerDashboard view="records" title="Team activity" description="Employee reports, reviews, and DoorDash across all stores." />;
   return <>
     <PageHeading title="Activity" description="Browse records, dates, and totals." />
     <TrackerGate>

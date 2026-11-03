@@ -240,3 +240,75 @@ If migration 008 fails with SQLSTATE 42723 because tracker_category_benchmarks a
 4. Owner verification with synthetic accounts/data: deny anonymous/nonmember/expired-member calls; allow current employee/manager aggregate calls with only fixed category keys/maxima in the response; retain employee isolation on raw reports and peer reporting. Reconcile maxima from per-person sums over the identical period, including multiple stores, zero, null, ties, no reports, and period boundaries. Confirm team aggregate view has no misleading individual-scale meters. Verify layout, Yesterday From/To stability, two-decimal presentation, unchanged stored precision, bonus sizing, and retry after missing-function/network failures.
 
 No migration application, hosted query, function deployment, server, build, automated check, or browser run was performed by the agent.
+
+## Manager dashboard rollout: 2026-11-03
+
+Implemented locally: manager-specific Overview, multi-person/multi-store filters, shared date selection, current/preceding period aggregates, daily/weekly/monthly comparison charts, profiles and category metrics, store results, and searched/paginated review/DoorDash/report history. Manager data reads use two new security-invoker RPCs. Employees retain their existing Overview and cannot call these RPCs successfully. No hosted migration or deployment was executed.
+
+1. After migrations 001-008 have been applied, copy the complete new migration:
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+Get-Content -Raw -LiteralPath .\supabase\migrations\202611030009_manager_dashboard.sql | Set-Clipboard
+```
+
+2. Open Supabase project zffaxlprvnxuqqmczhyi, SQL Editor, New query. Paste the complete contents of migrations/202611030009_manager_dashboard.sql and click Run. The transaction adds/replaces manager_dashboard and manager_records and adds two store/date indexes; it does not mutate reports, bonus entries, roles, or storage. If applying through the CLI instead, follow the project's established migration workflow and keep migration history consistent. Do not mark earlier migrations applied without confirming their actual application.
+3. Publish the updated frontend using the existing release process. No new Edge Function, Storage setting, environment variable, dependency, or service-role frontend credential is needed. Existing review-management functions and prior migrations remain required for screenshot access and record mutations. Before migration 009, the manager page explicitly reports missing setup and offers Retry; no fabricated analytics are shown.
+4. Owner verifies with synthetic data and accounts before release. Direct calls to both RPCs must deny anonymous, employee, missing-membership, and revoked-manager users; the browser's role label alone cannot authorize a query. Verify all/null/single/multiple/empty-array people/store filters, unknown UUIDs, null array elements, invalid kinds, oversized searches/arrays, reversed/oversized ranges, long-range bucket bounds, and record page limits. Existing raw-table and evidence RLS remain required.
+5. Use synthetic Person A and Person B in Stores 1 and 2. In a two-day current period, A has a 10-point report with $100 total revenue/$40 RTF revenue in Store 1, and a 20-point report with $200 total revenue/$80 RTF revenue in Store 2; B has a 5-point report with $50 total revenue/$20 RTF revenue in Store 1. Add two reviews for A in Store 1 and one DoorDash for B in Store 2. Expected whole-team totals: 35 points, $17.50 point value, $350 collected revenue, $3.50 RTF commission, 2 reviews/$4, 1 DoorDash/$5, $12.50 extra bonuses, $30 estimated earnings. A alone has 30 points/$300 revenue/$7 extra bonuses/$22 earnings; Store 1 has 15 points/$150 revenue/$5.50 extra bonuses/$13 earnings. The A+Store 2 intersection has 20 points/$200 revenue/$2 extra bonuses/$12 earnings. No source data is seeded automatically by this change.
+6. Verify the previous period is exactly the same number of inclusive days immediately before the current start and uses identical selected people/stores. Test day/week/month/year/leap boundaries and clipped chart buckets. A record without total-revenue or RTF fields retains missing-source counts rather than proving actual zero revenue; zeros shown are display sums of reported amounts. Revenue must use the explicit source total, never summed category fields; categories remain counts and revenue, not guessed point allocations. No-report buckets must remain distinct from actual zero-point reports. Check no-current/no-prior-data and partial-revenue comparison labels.
+7. Confirm all profiles remain visible with no records; filters apply across totals/charts/people/stores/categories/records; single-profile drill-down retains dates/store scope; chart metric/hover/keyboard-slider/exact data-table values agree with SQL; store/profile navigation and Reset work. Verify conditional pagination, last-page deletion, literal search by name/store/subscription, review screenshots, authorized review/DoorDash edits/deletes, refreshed counts/bonuses, stale/version conflicts, uncertain same-operation retries, automatic review-delete close, and focus fallback after deletion. No new record editing permission is introduced.
+8. Check account/cache isolation, bounded caches, concurrent request deduplication, hidden Records view fetch behavior, quiet minute/focus/save refresh, matching-scope stale-result retention, independent dashboard/record retry, missing RPC setup, keyboard/multi-select controls, tables at narrow widths, and manager viewport scrolling. Verify actual render/contrast/mobile/zoom/performance before milestone acceptance.
+
+No checks, dev server, browser, diff/inline checks, live reads, migration application, SQL execution, deployment, or push were performed. Owner release and database/visual/numeric acceptance remain pending.
+
+## Employee-only reporting scope and manager navigation: 2026-11-03
+
+Completed locally: role-specific manager navigation, Employees route, manager review/DoorDash pages as team-wide filtered records, manager Activity route, generic Manager workspace account labels, and prepared employee-only reporting RLS. No hosted changes have been run.
+
+1. Apply migrations 001-009 first. Copy the complete new migration:
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+Get-Content -Raw -LiteralPath .\supabase\migrations\202611030010_employee_reporting_scope.sql | Set-Clipboard
+```
+
+2. In Supabase project zffaxlprvnxuqqmczhyi, SQL Editor, New query, paste the whole migration and click Run. This adds the narrow tracker_is_employee helper, updates the three existing SELECT policies, and replaces the anonymous category benchmark aggregate to include employees only. It does not delete profiles/history, change account roles, merge accounts, or change stored points/bonuses. Storage evidence reads already require a visible bonus_entries row and inherit the narrower read scope. No Edge Function deployment is required for this reporting change.
+3. Publish the frontend through the existing release process. Sign out and back in afterward so pre-migration context/report caches are discarded. Manager navigation must show Team overview, Employees, All reviews, All DoorDash, Team activity on desktop/mobile/collapsed sidebars. All reviews/All DoorDash must show employee records by default with shared people/store/day/week/month filters, counts and bonus totals, search/pagination, and existing management actions. Employees retain their original navigation and entry forms.
+4. Owner verifies with synthetic Employee A, Employee B, Manager A, Manager B, each with distinguishable profiles and records. Manager A must read both employees but neither manager profile/record through tracker_context, manager_dashboard, manager_records, tracker_snapshot, tracker_reporting, raw SELECT queries, and evidence signed-URL requests. Repeat from Manager B. Explicitly selecting a manager UUID through a manager RPC must be rejected, and manager records must not affect team totals, prior-period trends, store/category totals, employee count, or anonymous benchmark highs. Employee A must retain own-profile/own-data access and be denied Employee B and both manager identities; employee aggregate benchmarks must exclude manager-owned records. Signed-out users must remain denied.
+5. Verify manager access does not require their own profile to appear in the employee roster. A manager without a tracker_people row can still read employee reporting when stores and membership are configured. Never fix this by adding a manager to the employee roster or renaming/merging the separate Skander employee account. Role membership, not display-name matching, defines eligibility. Verify direct /people access denies employees, direct manager visits to /reviews or /doordash show team records rather than forms, and all scopes/dates/counts/amounts agree. Existing protected mutation/version/cleanup flows and employee entry/save behavior still require owner acceptance.
+
+No migration application, hosted query, browser, server, automated checks, diff/inline checks, push, or deployment were executed by the agent. Existing manager-owned rows remain in storage outside the reporting roster. Review/DoorDash correction permissions were not expanded by this read-scope change.
+
+## Verified employee roster rollout: 2026-11-03
+
+Owner still observed a manager row in Employee performance. The client now requires a separately verified employee roster instead of trusting tracker_context's people array. All manager queries send an explicit whitelist, including for All, and returned employee/record rows are checked against it. Manager setup fails closed while that roster is missing/unavailable; saved manager UUIDs cannot broaden a query back to All.
+
+1. After migrations 001-010, copy migration 011:
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+Get-Content -Raw -LiteralPath .\supabase\migrations\202611030011_verified_employee_roster.sql | Set-Clipboard
+```
+
+2. Paste the entire file into Supabase project zffaxlprvnxuqqmczhyi, SQL Editor, New query, and Run. It adds/replaces manager_employee_roster, which verifies manager access and returns only mapped role=employee profiles, excluding the caller. It does not change any membership, identity, record, or display name. Migration 010 is still required to narrow legacy/raw/evidence read policies.
+3. Publish the updated frontend and sign out/back in to discard earlier context/data. No Edge Function deployment or new environment variable is required.
+4. Owner verifies that two manager profiles, including the separate Skander manager identity, are absent from every manager people picker/count/table/profile/chart/record result and that manager-owned rows do not contribute to totals or benchmarks. Explicit All must send only the verified employee UUIDs. Saved manager UUIDs must yield no matching selected employee, never expand to All. Change an employee role to manager in a synthetic workspace and refresh context: caches must invalidate and the profile/records must disappear. Missing roster setup, revoked access, or roster request failure must hide manager reporting instead of falling back to an unverified list. Employees' existing own-record behavior remains unchanged.
+
+No checks, server, browser, live roster read, role mutation, migration application, push, or deployment performed by the agent. The roster uses membership roles, not a hardcoded personal name; separate employee accounts are retained.
+
+## Manager history and layout cleanup: 2026-11-03
+
+1. After migrations 001-011, copy migration 012:
+
+```powershell
+Set-Location "C:\Users\skand\Documents\apps\repondly_whizz"
+Get-Content -Raw -LiteralPath .\supabase\migrations\202611030012_manager_bonus_history.sql | Set-Clipboard
+```
+
+2. Paste the whole migration into Supabase project zffaxlprvnxuqqmczhyi, SQL Editor, New query, and Run. It replaces the read-only manager_records function with an additional bonuses kind that includes review and DoorDash records together, before counting/search/pagination. Existing employee whitelist, manager access/RLS, date/store/search bounds, response schema, and explicit Reports filtering remain. No records or amounts are modified.
+3. Publish the frontend. Team activity's All option now sends bonuses, so it excludes productivity reports. Reports remains an explicit filter. All reviews and All DoorDash continue using their specific kinds. No Edge Function deployment or new configuration is required.
+4. Owner verifies: All contains only employee review/DoorDash entries; totals/search/page counts and last-page deletion reflect that combined set; explicit Reports still works; employee/store/date and verified-roster filters persist. Verify manager Earnings breakdown, Data details, Highest-point bucket, and visible Chart data toggles are absent in all manager sections. Employee comparisons default to highest value. Estimated earnings retains its correct dollar meaning: point value plus RTF/review/DoorDash bonuses, not total points. Accessible graph values remain available through the keyboard slider and screen-reader data table.
+5. Owner checks wheel/trackpad/touch/keyboard scrolling, scrollbar width stability, graph inspection, quiet refresh, long/wide tables, short/mobile/zoom viewports, and sidebar isolation. Manager panels no longer flex-shrink into competing scroll areas; wide tables scroll horizontally and the manager workspace handles vertical scroll with overscroll containment. No forced animated wheel scrolling is added.
+
+No checks, browser, dev server, diff/inline checks, migration application, hosted query, push, or deployment run by the agent.

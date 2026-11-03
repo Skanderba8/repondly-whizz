@@ -7,7 +7,7 @@ export function TrackerGate({ children }: { children: React.ReactNode }) {
   const { context, error, reload, account } = useTracker();
   if (error && !context) return <div role="alert" className="panel p-6"><p className="text-sm">{error}</p><Button className="mt-4" variant="outline" onClick={reload}>Retry</Button></div>;
   if (!context) return <p role="status" className="text-sm text-muted-foreground">Loading tracker...</p>;
-  const missingProfile = !context.people.some((person) => person.user_id === account.userId);
+  const missingProfile = account.role !== "manager" && !context.people.some((person) => person.user_id === account.userId);
   const missingStores = context.stores.length === 0;
   if (missingProfile || missingStores) {
     return <div className="panel p-6">

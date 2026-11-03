@@ -85,9 +85,9 @@ export function History({ records, showOwner = false, hidePoints = false, record
         </tr>)}</tbody>
       </table></div>
       <ul className="divide-y md:hidden">{records.map((record) => <li key={record.id} className="px-4 py-3">
-        <div className="mb-2 flex items-center justify-between gap-3"><span className="text-xs text-muted-foreground">{dateLabel(record.work_date)}</span><span className="text-sm font-semibold tabular-nums">{record.bonus_cents === null ? `${record.points?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 0} points` : money(record.bonus_cents / 100)}</span></div>
+        <div className="mb-2 flex items-center justify-between gap-3"><span className="text-xs text-muted-foreground">{dateLabel(record.work_date)}</span><span className="text-sm font-semibold tabular-nums">{record.kind === "productivity" ? `${record.points?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 0} points` : money((record.bonus_cents ?? 0) / 100)}</span></div>
         <RecordSummary record={record} showOwner={showOwner} />
-        {record.kind === "productivity" ? <p className="mt-2 text-xs text-muted-foreground">Collected revenue <span className="font-medium text-foreground tabular-nums">{revenueLabel(record)}</span></p> : null}
+        {record.kind === "productivity" ? <p className="mt-2 text-xs text-muted-foreground">Collected revenue <span className="font-medium text-foreground tabular-nums">{revenueLabel(record)}</span>{record.bonus_cents !== null ? <> · RTF commission <span className="font-medium text-foreground tabular-nums">{money(record.bonus_cents / 100)}</span></> : null}</p> : null}
         <RecordActions record={record} onManage={manage} />
       </li>)}</ul>
     </>}

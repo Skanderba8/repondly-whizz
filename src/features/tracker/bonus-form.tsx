@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { PageHeading } from "@/components/page-heading";
 import { WorkspacePanel } from "@/components/workspace-panel";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,11 @@ import { TrackerGate } from "./tracker-gate";
 import { useTracker } from "./tracker-provider";
 
 type Kind = "review" | "doordash";
+const ManagerDashboard = dynamic(() => import("@/features/manager/manager-dashboard").then((module) => module.ManagerDashboard));
 
 export function BonusPage({ kind }: { kind: Kind }) {
+  const { account } = useTracker();
+  if (account.role === "manager") return <ManagerDashboard view="records" recordKind={kind} title={kind === "review" ? "All reviews" : "All DoorDash subscriptions"} description="Employee records and bonuses. Filter by date, store, or employee." />;
   return <><PageHeading title={kind === "review" ? "Reviews" : "DoorDash"} description={kind === "review" ? "Log Google Maps reviews you checked." : "Track DoorDash promo subscriptions."} action={<BonusHistoryAction kind={kind} />} /><TrackerGate><BonusForm kind={kind} /></TrackerGate></>;
 }
 
