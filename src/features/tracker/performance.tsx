@@ -11,11 +11,12 @@ import { Select } from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTracker } from "./tracker-provider";
 import { TrackerGate } from "./tracker-gate";
-import { dateLabel, localDate, money, pointsLabel, shiftDate, type Snapshot } from "./domain";
-import { chartBucket, presetRange, type Reporting, type ReportingRange } from "./reporting";
+import { dateLabel, localDate, money, pointsLabel, type Snapshot } from "./domain";
+import { chartBucket, type Reporting } from "./reporting";
 import { History } from "./history";
 import { DashboardAnalytics } from "./dashboard-analytics";
 import { PeriodPicker } from "./period-picker";
+import { useReportingPeriod } from "./use-reporting-period";
 
 const ManagerDashboard = dynamic(() => import("@/features/manager/manager-dashboard").then((module) => module.ManagerDashboard));
 
@@ -38,10 +39,7 @@ function ReportingPerformance({ historyOnly, kind }: { historyOnly: boolean; kin
   const store = context?.stores.find((row) => row.id === (person?.home_store_id ?? ownPerson?.home_store_id))
     ?? context?.stores.find((row) => row.timezone === "America/New_York") ?? context?.stores[0];
   const today = localDate(store?.timezone ?? "America/New_York");
-  const [preset, setPreset] = useState("month");
-  const [custom, setCustom] = useState<ReportingRange | null>(null);
-  const yesterday = shiftDate(today, -1);
-  const range = preset === "custom" && custom ? custom : preset === "yesterday" ? { start: yesterday, end: yesterday } : presetRange(preset === "week" ? "week" : "month", today);
+  const { ready, preset, range, selectPreset, selectRange, reset } = useReportingPeriod(today);
   const { start, end } = range;
   const bucket = chartBucket(range);
   const scopeKey = `${owner}:${start}:${end}:${kind ?? "all"}`;
@@ -57,6 +55,7 @@ function ReportingPerformance({ historyOnly, kind }: { historyOnly: boolean; kin
   const visible = result?.viewKey === viewKey ? result : null;
 
   useEffect(() => {
+    if (!ready) return;
     let active = true;
     async function load() {
       try {
@@ -73,11 +72,14 @@ function ReportingPerformance({ historyOnly, kind }: { historyOnly: boolean; kin
     }
     void load();
     return () => { active = false; };
-  }, [historyOnly, kind, owner, start, end, page, bucket, key, viewKey, scopeKey, loadSnapshot, loadReporting]);
+  }, [ready, historyOnly, kind, owner, start, end, page, bucket, key, viewKey, scopeKey, loadSnapshot, loadReporting]);
+
+  if (!ready) return <p role="status" className="px-4 py-6 text-sm text-muted-foreground">Restoring selected dates...</p>;
 
   const controls = <div className="flex flex-wrap items-center gap-2">
-    <SegmentedControl label="Date range" value={preset === "custom" ? "" : preset} onValueChange={setPreset} options={[{ value: "month", label: "This month" }, { value: "week", label: "This week" }, { value: "yesterday", label: "Yesterday" }]} />
-    <PeriodPicker range={range} today={today} onSelect={(next) => { setCustom(next); setPreset("custom"); }} />
+    <SegmentedControl label="Date range" value={preset === "custom" ? "" : preset} onValueChange={selectPreset} options={[{ value: "month", label: "This month" }, { value: "week", label: "This week" }, { value: "yesterday", label: "Yesterday" }]} />
+    <PeriodPicker range={range} today={today} onSelect={selectRange} />
+    <Button variant="ghost" onClick={reset}>Reset</Button>
     {account.role === "manager" ? <div className="w-44"><Select ref={memberControl} aria-label="Viewing" value={owner} onValueChange={setOwner} options={[{ value: "team", label: "Whole team" }, ...(context?.people ?? []).map((row) => ({ value: row.user_id, label: `${row.display_name}${row.user_id === account.userId ? " (you)" : ""}` }))]} /></div> : null}
     <Button variant="ghost" size="icon" aria-label="Refresh reporting" aria-busy={pending} onClick={invalidate}><RefreshCw aria-hidden="true" className={pending ? "animate-spin" : undefined} /></Button>
   </div>;
