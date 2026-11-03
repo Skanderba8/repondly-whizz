@@ -43,8 +43,9 @@ export function TrackerProvider({ account, children }: { account: WorkspaceAccou
     }
     const timer = window.setInterval(refreshTracker, 60_000);
     window.addEventListener("focus", refreshTracker);
+    window.addEventListener("online", refreshTracker);
     document.addEventListener("visibilitychange", refreshTracker);
-    return () => { window.clearInterval(timer); window.removeEventListener("focus", refreshTracker); document.removeEventListener("visibilitychange", refreshTracker); };
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refreshTracker); window.removeEventListener("online", refreshTracker); document.removeEventListener("visibilitychange", refreshTracker); };
   }, [invalidate]);
   useEffect(() => {
     let active = true;

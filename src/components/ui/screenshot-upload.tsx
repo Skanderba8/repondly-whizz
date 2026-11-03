@@ -44,29 +44,38 @@ export function ScreenshotUpload({ id = "review-screenshot", compact = false, de
     if (!screenshotMimeTypes.includes(selected.type)) { onError("Use a PNG, JPEG, or WebP screenshot."); return; }
     const version = ++generation.current;
     setProcessing(true); onProcessing(true); onError("");
-    let bitmap: ImageBitmap | undefined;
+    let imageUrl = "";
+    let canvas: HTMLCanvasElement | undefined;
     try {
       const info = inspectScreenshot(new Uint8Array(await selected.arrayBuffer()));
       if (!info || info.mime !== selected.type) throw new Error("This image is invalid. Export a fresh PNG, JPEG, or WebP screenshot.");
       if (!screenshotDimensionsAllowed(info)) throw new Error("Use an image up to 24 megapixels and 16,384 pixels per side. Crop to the review if needed.");
-      bitmap = await createImageBitmap(selected);
-      if (!bitmap.width || !bitmap.height) throw new Error("This image could not be opened. Export a fresh screenshot.");
+      imageUrl = URL.createObjectURL(selected);
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("This image could not be opened. Export a fresh screenshot."));
+        image.src = imageUrl;
+      });
+      if (!image.naturalWidth || !image.naturalHeight) throw new Error("This image could not be opened. Export a fresh screenshot.");
       // Keep original pixels. Lossless PNG encoding is used only when it saves bytes.
-      const canvas = document.createElement("canvas");
-      canvas.width = bitmap.width; canvas.height = bitmap.height;
-      const drawing = canvas.getContext("2d");
       let prepared = selected;
-      if (drawing) {
-        drawing.drawImage(bitmap, 0, 0);
-        const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-        if (png && png.size > 0 && png.size < selected.size) prepared = new File([png], "review-screenshot.png", { type: "image/png" });
-        canvas.width = 0; canvas.height = 0;
-      }
+      try {
+        canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+        const drawing = canvas.getContext("2d");
+        if (drawing) {
+          drawing.drawImage(image, 0, 0);
+          const png = await new Promise<Blob | null>((resolve) => canvas?.toBlob(resolve, "image/png"));
+          if (png && png.size > 0 && png.size < selected.size) prepared = new File([png], "review-screenshot.png", { type: "image/png" });
+        }
+      } catch { /* Optional compression must not reject a valid decoded screenshot. */ }
       if (version === generation.current) onChange(prepared);
     } catch (reason) {
       if (version === generation.current) onError(reason instanceof Error ? reason.message : "This image could not be opened. Choose another screenshot.");
     } finally {
-      bitmap?.close();
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
       if (version === generation.current) { setProcessing(false); onProcessing(false); }
     }
   }
@@ -93,7 +102,7 @@ export function ScreenshotUpload({ id = "review-screenshot", compact = false, de
           {processing ? <LoaderCircle className={`${density === "popup" ? "size-6" : "size-12"} animate-spin text-link motion-reduce:animate-none`} aria-hidden="true" /> : <ArrowUpToLine strokeWidth={1.5} className={`${density === "popup" ? "size-6" : "size-12"} text-muted-foreground transition-colors duration-150 group-hover:text-link group-focus-visible:text-link motion-reduce:transition-none`} aria-hidden="true" />}
           <span className="space-y-2">
             <span className={density === "popup" ? "block text-sm font-medium" : "block text-base font-semibold sm:text-lg"}>{processing ? "Preparing your screenshot" : density === "popup" ? "Choose screenshot" : "Drop your screenshot here"}</span>
-            <span className="block text-sm text-muted-foreground">{density === "popup" ? processing ? "Please wait..." : "or drop an image here" : processing ? "Keeping it clear and reducing file size" : <>or <span className="font-medium text-link underline decoration-link/40 underline-offset-4 group-hover:decoration-link">browse files</span> on your computer</>}</span>
+            <span className="block text-sm text-muted-foreground">{density === "popup" ? processing ? "Please wait..." : "or drop an image here" : processing ? "Keeping it clear and reducing file size" : <>or <span className="font-medium text-link underline decoration-link/40 underline-offset-4 group-hover:decoration-link">choose a photo or file</span> from your device</>}</span>
           </span>
         </>}
       </span>

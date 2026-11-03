@@ -93,6 +93,7 @@ function WorkspaceAuthBoundary({ children }: { children: React.ReactNode }) {
       }
     }
     window.addEventListener("focus", revalidate);
+    window.addEventListener("online", revalidate);
     document.addEventListener("visibilitychange", revalidate);
     const accessTimer = window.setInterval(revalidate, 60_000);
     return () => {
@@ -100,6 +101,7 @@ function WorkspaceAuthBoundary({ children }: { children: React.ReactNode }) {
       clearTimeout(timer);
       unsubscribe?.();
       window.removeEventListener("focus", revalidate);
+      window.removeEventListener("online", revalidate);
       document.removeEventListener("visibilitychange", revalidate);
       window.clearInterval(accessTimer);
     };

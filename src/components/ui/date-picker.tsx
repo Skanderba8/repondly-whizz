@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ComponentProps, type KeyboardEvent } from "react";
 import { Popover } from "radix-ui";
+import { z } from "zod";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./button";
 import { Input } from "./input";
@@ -30,9 +31,10 @@ function shiftMonth(month: string, amount: number) {
 }
 
 export function DatePicker({ value, onValueChange, today, label, min, max, disabled, required, className, ...props }: DatePickerProps) {
+  const calendarDate = z.iso.date().safeParse(value).success ? value : today;
   const [open, setOpen] = useState(false);
-  const [month, setMonth] = useState((value || today).slice(0, 7));
-  const [focused, setFocused] = useState(value || today);
+  const [month, setMonth] = useState(calendarDate.slice(0, 7));
+  const [focused, setFocused] = useState(calendarDate);
   const dayRef = useRef<HTMLButtonElement>(null);
   const first = `${month}-01`;
   const gridStart = shiftDay(first, -new Date(`${first}T12:00:00Z`).getUTCDay());
@@ -43,7 +45,7 @@ export function DatePicker({ value, onValueChange, today, label, min, max, disab
   const unavailable = (date: string) => Boolean((min && date < min) || (max && date > max));
 
   function changeOpen(next: boolean) {
-    if (next) { setMonth((value || today).slice(0, 7)); setFocused(value || today); }
+    if (next) { setMonth(calendarDate.slice(0, 7)); setFocused(calendarDate); }
     setOpen(next);
   }
   function choose(date: string) {

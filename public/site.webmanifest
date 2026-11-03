@@ -1,6 +1,9 @@
 {
   "name": "Whizz Repondly",
   "short_name": "Repondly",
+  "id": "/",
+  "lang": "en",
+  "description": "Employee and manager performance, reviews, and DoorDash tracking.",
   "start_url": "/",
   "scope": "/",
   "icons": [

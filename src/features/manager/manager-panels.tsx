@@ -41,7 +41,7 @@ export function ManagerCategories({ categories, id = "manager-categories" }: { c
   const maximum = Math.max(1, ...categories.map((row) => row.count));
   return <WorkspacePanel id={id} title="Activity by category">
     <div className="manager-horizontal-scroll"><table className="tracker-table manager-table min-w-[400px]"><thead><tr><th scope="col">Category</th><th scope="col">Count</th><th scope="col" className="text-right">Collected revenue</th></tr></thead><tbody>{categories.map((row) => <tr key={row.key}><th scope="row">{categoryLabels[row.key] ?? row.key}</th><td className="min-w-28"><span className="font-medium tabular-nums">{pointsLabel(row.count)}</span><div className="mt-1.5 category-benchmark-track" aria-hidden="true"><div className="category-benchmark-fill" style={{ width: `${row.count/maximum*100}%` }} /></div></td><td className="text-right whitespace-nowrap tabular-nums">{money(row.revenue)}</td></tr>)}</tbody></table></div>
-    <p className="px-4 py-3 text-xs text-muted-foreground">Counts and revenue by type; points use the reported total.</p>
+    <p className="px-4 py-3 text-xs text-muted-foreground">Counts and revenue by type; points use the reported total.{categories.some((row) => row.count_missing > 0 || row.revenue_missing > 0) ? " Partial source data: some category counts or revenue were not reported. Values include known amounts only." : ""}</p>
   </WorkspacePanel>;
 }
 export function ManagerPeople({ data, onSelect, comparisonStatus = "ready" }: { data: ManagerData; onSelect: (id: string) => void; comparisonStatus?: ComparisonStatus }) {

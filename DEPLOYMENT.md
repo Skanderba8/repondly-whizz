@@ -18,8 +18,16 @@ Use the existing Supabase project, not a new empty backend. Frontend deployment 
 2. `202611020002_bonus_tracker.sql`
 3. `202611020003_tracker_dashboard.sql`
 4. `202611020004_accurate_reporting.sql`
+5. `202611030005_review_evidence_limits.sql`
+6. `202611030006_review_management.sql`
+7. `202611030007_doordash_management.sql`
+8. `202611030008_category_benchmarks.sql`
+9. `202611030009_manager_dashboard.sql`
+10. `202611030010_employee_reporting_scope.sql`
+11. `202611030011_verified_employee_roster.sql`, using the corrected complete function definition.
+12. `202611030012_manager_bonus_history.sql`
 
-Confirm stores, owner-approved account mappings, employee/manager memberships, private evidence storage, and the screenshot size setting are configured. Keep public signup and anonymous sign-in disabled. Deploy the existing `save-review` function if reviews are needed. Follow its authentication instructions in the Supabase guide; do not disable authentication to work around an upload error.
+Confirm stores, owner-approved account mappings, employee/manager memberships, private evidence storage, and the screenshot size setting are configured. Keep public signup and anonymous sign-in disabled. Deploy both `save-review` and `manage-review` for review creation, edits, screenshot replacement, and deletion. Follow their authentication instructions in the Supabase guide; do not disable authentication to work around an upload error. Follow [RELEASE_REVIEW.md](RELEASE_REVIEW.md) for the corrected roster rollout and Android/iOS acceptance checklist.
 
 Do not rerun account setup blindly or replace the existing backend. Preserve the two independent Skander accounts. Confirm backup/restore ownership and evidence retention before team release. A successful frontend build does not prove database permissions or data accuracy.
 

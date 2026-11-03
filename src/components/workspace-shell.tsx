@@ -9,6 +9,8 @@ import { Brand } from "@/components/brand";
 import { AccountMenu } from "@/components/account-menu";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { ChromeExtensionLink } from "@/components/chrome-extension-link";
+import { InstallApp } from "@/components/install-app";
+import { ConnectionStatus } from "@/components/connection-status";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { WorkspaceAccount } from "@/features/access/access";
@@ -80,7 +82,7 @@ export function WorkspaceShell({ children, account, onSignOut }: {
             {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
           </Button>
         </div>
-        <div ref={navigationRef} id="desktop-navigation" className="workspace-sidebar-navigation mt-6"><WorkspaceNav role={account.role} collapsed={collapsed} /></div>
+        <div ref={navigationRef} id="desktop-navigation" className="workspace-sidebar-navigation mt-6"><WorkspaceNav role={account.role} collapsed={collapsed} /><InstallApp /></div>
         <div className="shrink-0 pt-4"><ChromeExtensionLink collapsed={collapsed} /><Separator className="my-3" /><AccountMenu account={account} onSignOut={onSignOut} /></div>
       </aside>
       <div className="workspace-body">
@@ -95,7 +97,7 @@ export function WorkspaceShell({ children, account, onSignOut }: {
                     <Dialog.Title><Brand /></Dialog.Title>
                     <Dialog.Close asChild><Button variant="ghost" size="icon" aria-label="Close navigation"><X aria-hidden="true" /></Button></Dialog.Close>
                   </div>
-                  <div className="workspace-sidebar-navigation mt-6"><WorkspaceNav role={account.role} onNavigate={() => setMobileOpen(false)} /></div>
+                  <div className="workspace-sidebar-navigation mt-6"><WorkspaceNav role={account.role} onNavigate={() => setMobileOpen(false)} /><InstallApp /></div>
                   <div className="shrink-0 pt-4"><ChromeExtensionLink onNavigate={() => setMobileOpen(false)} /><Separator className="my-3" /><p className="break-all px-3 text-sm">{account.role === "manager" ? "Manager workspace" : account.email}</p><p className="px-3 text-xs text-muted-foreground">{account.role === "manager" ? "Manager" : "Employee"}</p></div>
                 </Dialog.Content>
               </Dialog.Portal>
@@ -104,8 +106,8 @@ export function WorkspaceShell({ children, account, onSignOut }: {
           </div>
           <div className="flex items-center gap-4"><span className="hidden text-xs text-muted-foreground sm:inline">{account.role === "manager" ? "Team performance" : "Personal bonus tracker"}</span><div className="md:hidden"><AccountMenu account={account} onSignOut={onSignOut} compact /></div></div>
         </header>
-        <main id="main-content" tabIndex={-1} className="workspace-content">{children}</main>
-        <footer className="mx-auto max-w-[1440px] px-4 pt-2 pb-8 text-xs text-muted-foreground md:px-6 xl:px-8">Whizz Repondly <span aria-hidden="true">·</span> Personal bonus tracker</footer>
+        <main id="main-content" tabIndex={-1} className="workspace-content"><ConnectionStatus />{children}</main>
+        <footer className="mx-auto max-w-[1440px] px-4 pt-2 pb-8 text-xs text-muted-foreground md:px-6 xl:px-8">Whizz Repondly <span aria-hidden="true">·</span> {account.role === "manager" ? "Team performance" : "Personal bonus tracker"}</footer>
       </div>
     </div>
   );
