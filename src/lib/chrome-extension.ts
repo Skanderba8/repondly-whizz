@@ -8,5 +8,6 @@ export function parseChromeWebStoreUrl(value: string | undefined): string | null
 }
 
 export function getChromeWebStoreUrl() {
-  return parseChromeWebStoreUrl(process.env.NEXT_PUBLIC_CHROME_EXTENSION_URL);
+  return parseChromeWebStoreUrl(process.env.NEXT_PUBLIC_CHROME_EXTENSION_URL)
+    ?? "https://chromewebstore.google.com/detail/ipocmiikkjablnchfmheladblmnofmjh";
 }
