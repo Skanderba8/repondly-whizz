@@ -21,6 +21,7 @@ type Props = {
 export function ScreenshotUpload({ id = "review-screenshot", compact = false, density = "default", file, limit, disabled, error, onChange, onError, onProcessing }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
+  const selecting = useRef(false);
   const dragDepth = useRef(0);
   const preview = useRef<HTMLImageElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -37,12 +38,13 @@ export function ScreenshotUpload({ id = "review-screenshot", compact = false, de
   useEffect(() => () => { generation.current++; }, []);
 
   async function selectFiles(files: File[]) {
-    if (unavailable) return;
+    if (unavailable || selecting.current) return;
     if (files.length !== 1) { onError("Choose one screenshot at a time."); return; }
     const selected = files[0];
     if (!selected.size || selected.size > maxBytes) { onError(`Choose a nonempty screenshot up to ${maxBytes / 1024 / 1024} MB.`); return; }
     if (!screenshotMimeTypes.includes(selected.type)) { onError("Use a PNG, JPEG, or WebP screenshot."); return; }
     const version = ++generation.current;
+    selecting.current = true;
     setProcessing(true); onProcessing(true); onError("");
     let imageUrl = "";
     let canvas: HTMLCanvasElement | undefined;
@@ -74,11 +76,27 @@ export function ScreenshotUpload({ id = "review-screenshot", compact = false, de
     } catch (reason) {
       if (version === generation.current) onError(reason instanceof Error ? reason.message : "This image could not be opened. Choose another screenshot.");
     } finally {
+      selecting.current = false;
       if (imageUrl) URL.revokeObjectURL(imageUrl);
       if (canvas) { canvas.width = 0; canvas.height = 0; }
       if (version === generation.current) { setProcessing(false); onProcessing(false); }
     }
   }
+
+  useEffect(() => {
+    if (density !== "popup" || unavailable) return;
+    function pasteScreenshot(event: ClipboardEvent) {
+      const images = Array.from(event.clipboardData?.items ?? [])
+        .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+        .map((item) => item.getAsFile())
+        .filter((image): image is File => image !== null);
+      if (!images.length) return;
+      event.preventDefault();
+      void selectFiles(images);
+    }
+    document.addEventListener("paste", pasteScreenshot);
+    return () => document.removeEventListener("paste", pasteScreenshot);
+  });
 
   return <div className={density === "popup" ? "popup-upload space-y-2" : "space-y-3"}>
     <input ref={input} className="hidden" type="file" accept="image/png,image/jpeg,image/webp" disabled={unavailable} aria-label="Choose review screenshot" onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ""; if (files.length) void selectFiles(files); }} />
@@ -102,7 +120,7 @@ export function ScreenshotUpload({ id = "review-screenshot", compact = false, de
           {processing ? <LoaderCircle className={`${density === "popup" ? "size-6" : "size-12"} animate-spin text-link motion-reduce:animate-none`} aria-hidden="true" /> : <ArrowUpToLine strokeWidth={1.5} className={`${density === "popup" ? "size-6" : "size-12"} text-muted-foreground transition-colors duration-150 group-hover:text-link group-focus-visible:text-link motion-reduce:transition-none`} aria-hidden="true" />}
           <span className="space-y-2">
             <span className={density === "popup" ? "block text-sm font-medium" : "block text-base font-semibold sm:text-lg"}>{processing ? "Preparing your screenshot" : density === "popup" ? "Choose screenshot" : "Drop your screenshot here"}</span>
-            <span className="block text-sm text-muted-foreground">{density === "popup" ? processing ? "Please wait..." : "or drop an image here" : processing ? "Keeping it clear and reducing file size" : <>or <span className="font-medium text-link underline decoration-link/40 underline-offset-4 group-hover:decoration-link">choose a photo or file</span> from your device</>}</span>
+            <span className="block text-sm text-muted-foreground">{density === "popup" ? processing ? "Please wait..." : "Drop an image or paste with Ctrl+V" : processing ? "Keeping it clear and reducing file size" : <>or <span className="font-medium text-link underline decoration-link/40 underline-offset-4 group-hover:decoration-link">choose a photo or file</span> from your device</>}</span>
           </span>
         </>}
       </span>

@@ -27,9 +27,12 @@ export function Popup() {
   useEffect(() => {
     let disposed = false;
     let generation = 0;
+    let checkedToken: string | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const client = getSupabaseClient();
     const { data } = client.auth.onAuthStateChange((_event, session) => {
+      if (session && session.access_token === checkedToken) return;
+      checkedToken = session?.access_token ?? null;
       const request = ++generation;
       clearTimeout(timer);
       setAccess(session ? { status: "loading" } : { status: "signed-out" });
@@ -37,17 +40,19 @@ export function Popup() {
       timer = setTimeout(() => {
         void (async () => {
           try {
-            const identity = await client.auth.getUser();
+            const [identity, membership, setup] = await Promise.all([
+              client.auth.getUser(),
+              client.from("workspace_members").select("role").eq("user_id", session.user.id).maybeSingle(),
+              client.rpc("tracker_context"),
+            ]);
             if (identity.error || identity.data.user?.id !== session.user.id) throw new Error("Sign-in could not be verified. Retry or sign in again.");
-            const membership = await client.from("workspace_members").select("role").eq("user_id", session.user.id).maybeSingle();
             if (membership.error) throw new Error("Access could not be loaded. Check your connection and retry.");
             const role = accessRoleSchema.safeParse(membership.data?.role);
             if (!role.success) { if (!disposed && request === generation) setAccess({ status: "denied" }); return; }
             let context: TrackerContext | null = null;
             if (role.data === "employee") {
-              const result = await client.rpc("tracker_context");
-              if (result.error) throw new Error("Tracker setup could not be loaded. Retry or contact your workspace owner.");
-              context = contextSchema.parse(result.data);
+              if (setup.error) throw new Error("Tracker setup could not be loaded. Retry or contact your workspace owner.");
+              context = contextSchema.parse(setup.data);
               if (!context.people.some((person) => person.user_id === session.user.id) || !context.stores.length) throw new Error("Your tracker profile and stores need owner setup before you can add entries.");
             }
             if (!disposed && request === generation) setAccess({ status: "ready", account: { userId: session.user.id, email: session.user.email ?? "", role: role.data }, context });
@@ -88,7 +93,7 @@ export function Popup() {
       {access.account.role === "employee" && access.context ? <EmployeePopup key={access.account.userId} account={access.account} context={access.context} /> : <main className="popup-main"><PageHeading title="Manager workspace" description="Open the app to review your team's activity and performance." /><Button asChild><a href={appUrl} target="_blank" rel="noreferrer">Open team overview<ArrowUpRight aria-hidden="true" /></a></Button></main>}
       {access.account.role !== "employee" ? <footer className="popup-footer"><span className="min-w-0 truncate text-xs text-muted-foreground" title={access.account.email}>{access.account.email}</span><Button size="sm" variant="ghost" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" />{signingOut ? "Signing out..." : "Sign out"}</Button></footer> : null}
     </> : <main className="popup-main" aria-busy={access.status === "loading"}>
-      {access.status === "loading" ? <div className="flex flex-col gap-4" role="status"><p className="text-sm text-muted-foreground">Opening your workspace...</p><div className="h-20 rounded-lg bg-muted motion-safe:animate-pulse" /><div className="h-44 rounded-lg bg-muted motion-safe:animate-pulse" /></div> : <><PageHeading title={access.status === "denied" ? "Workspace access needed" : "Unable to open workspace"} description={access.status === "denied" ? "Contact your workspace owner to restore access." : access.message ?? "Check your connection and retry."} /><div className="flex gap-2"><Button onClick={() => setRevision((value) => value + 1)}>Retry</Button><Button variant="ghost" disabled={signingOut} onClick={() => void signOut()}>Sign out</Button></div></>}
+      {access.status === "loading" ? <div role="status" className="popup-placeholder"><span className="sr-only">Loading entry controls</span><div aria-hidden="true" className="flex flex-col gap-3"><div className="h-10 rounded-xl bg-muted" /><div className="h-10 rounded-xl bg-muted" /><div className="grid grid-cols-2 gap-3"><div className="h-16 rounded-xl bg-muted" /><div className="h-16 rounded-xl bg-muted" /></div><div className="h-24 rounded-xl bg-muted" /><div className="h-11 rounded-xl bg-muted" /></div></div> : <><PageHeading title={access.status === "denied" ? "Workspace access needed" : "Unable to open workspace"} description={access.status === "denied" ? "Contact your workspace owner to restore access." : access.message ?? "Check your connection and retry."} /><div className="flex gap-2"><Button onClick={() => setRevision((value) => value + 1)}>Retry</Button><Button variant="ghost" disabled={signingOut} onClick={() => void signOut()}>Sign out</Button></div></>}
     </main>}
     {error ? <p role="alert" className="mx-4 mb-4 rounded-md bg-error-background p-3 text-sm text-error-foreground">{error}</p> : null}
   </div>;

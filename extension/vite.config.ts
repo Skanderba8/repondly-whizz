@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
         this.emitFile({ type: "asset", fileName: "manifest.json", source: JSON.stringify({
           manifest_version: 3,
           name: "Whizz Repondly",
-          version: "0.1.0",
+          version: "0.1.1",
           description: "Quick review and DoorDash entry for your private Whizz workspace.",
           minimum_chrome_version: "120",
           action: { default_popup: "popup.html", default_title: "Whizz Repondly", default_icon: { "32": "icon-32.png" } },

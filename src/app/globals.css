@@ -316,7 +316,10 @@
   html.popup-document { width: 440px; min-width: 440px; max-width: 440px; height: 600px; overflow: hidden; scrollbar-gutter: auto; --font-geist: ui-sans-serif, system-ui, sans-serif; }
   body.extension-popup { @apply m-0 h-full overflow-hidden text-sm; width: 440px; min-width: 440px; }
   .extension-popup #root { @apply h-full w-full min-w-0; }
-  .popup-shell { @apply flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden; }
+  .popup-shell { @apply flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl bg-background; }
+  .extension-popup .form-control, .extension-popup .date-input, .extension-popup .popup-upload > button { @apply rounded-xl; }
+  .popup-entry-form > div:last-child > button { @apply rounded-xl; }
+  .popup-placeholder { @apply pt-0; }
   .popup-header { @apply flex shrink-0 items-center justify-between gap-3 border-b bg-card px-3 py-1; }
   .popup-header .brand { @apply gap-2; }
   .popup-main { @apply flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain p-4; scrollbar-gutter: stable; }
@@ -341,4 +344,15 @@
   .popup-access .access-panel { @apply my-auto min-w-0 shrink-0 rounded-xl border bg-card p-5; }
   .popup-access #login-help { @apply mt-2; }
   .popup-access form { @apply mt-5; }
+}
+
+@keyframes popup-content-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .popup-shell, .popup-main[data-entry="true"], .popup-entry-form {
+    animation: popup-content-enter 150ms cubic-bezier(0.2, 0, 0, 1);
+  }
 }

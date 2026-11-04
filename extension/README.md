@@ -1,6 +1,6 @@
 # Whizz Chrome popup
 
-For teammates to install without Developer mode, follow [PUBLISHING.md](PUBLISHING.md). The app sidebar now includes Add extension above the profile. It opens the approved Chrome Web Store URL when configured, and otherwise shows an honest availability page. Store publication, review and production configuration are still owner steps; no listing exists yet.
+For teammates to install without Developer mode, follow [PUBLISHING.md](PUBLISHING.md). The app sidebar includes Add extension above the profile. It defaults to the owner-confirmed public Whizz listing (ipocmiikkjablnchfmheladblmnofmjh), with an optional validated store URL override. Website rollout remains an owner step.
 
 A separate Manifest V3 extension with a small toolbar popup. It reuses the existing Whizz design tokens, form controls, public Supabase configuration, login, schemas, and protected save paths. The main website remains the full workspace.
 
@@ -32,6 +32,14 @@ Implementation is prepared. No build, installation, hosted operation, or verific
 6. Choose **Review** or **DoorDash**. Store/date are retained in each draft. Reviews support browse/drop, a preview, and an optional note. DoorDash requires the subscription number and checked **DD proof added**. Use **Open app** for full history and the complete dashboard. Manager logins link to the existing team workspace.
 
 For subsequent updates, close the popup, run the same build command, and click **Reload** on the extension card. Do not reload/remove the extension while a save is pending. Rebuild when changing public backend configuration. `dist/` is ignored by Git. Do not load the source `extension/` directory; the generated package is `dist/extension/`.
+
+## Publish popup update 0.1.1
+
+1. From the repository root with the existing production-safe public environment values, run `npm run package:extension`.
+2. Open the existing Whizz Repondly item (ipocmiikkjablnchfmheladblmnofmjh) in the Chrome Web Store Developer Dashboard. Upload `dist/whizz-repondly-chrome.zip` as a new package for that same item, then submit/publish through Google's review flow. Do not create a new item.
+3. After approval and rollout, verify installed version 0.1.1 and the owner acceptance cases below. These extension changes require a store update; a website redeploy alone does not update the popup. Packaging, upload, approval and installed verification have not been executed by the agent.
+
+The popup now uses quiet layout placeholders while verifying access, concurrent startup requests, a short reduced-motion-aware entrance, and rounder content/entry controls. Chrome controls native closing and the outer popup frame. Confirmed success text appears only for a save observed in the current entry, not from restoring a saved receipt. With the Review entry open, copy an image and press Ctrl+V anywhere in the popup to select or replace the screenshot. Ordinary text paste stays unchanged. Image paste runs the same validation/preparation as browse/drop, is unavailable while locked/processing, and does not request clipboard permissions.
 
 ## Backend prerequisites
 

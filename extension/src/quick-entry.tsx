@@ -26,6 +26,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
   const busy = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const [error, setError] = useState("");
   const [storageError, setStorageError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,7 +67,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
           stored = { ...stored, status: "uncertain", unconfirmed: true, message: "Save was interrupted or not confirmed. Retry this same entry to check or complete it." };
           await writeDraft(stored);
         }
-        if (active && stored) { current.current = stored; setDraft(stored); if (stored.status === "saved") savedCallback.current(); }
+        if (active && stored) { current.current = stored; setDraft(stored); if (stored.status === "saved") { setShowSaved(true); savedCallback.current(); } }
       } catch { if (active) setStorageError("Unable to read save status. Reopen the popup before creating another entry."); }
       finally { polling = false; }
     }
@@ -78,7 +79,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
     const previous = current.current;
     if (!previous || busy.current || ["saving", "uncertain"].includes(previous.status)) return;
     const next = { ...previous, ...patch, status: "draft" as const, message: "" };
-    current.current = next; setDraft(next); setError("");
+    current.current = next; setDraft(next); setError(""); setShowSaved(false);
     queue.current = queue.current.catch(() => {}).then(() => writeDraft(next));
     void queue.current.then(() => setStorageError(""), () => setStorageError("Your draft could not be stored. Keep the popup open and retry saving."));
   }
@@ -87,7 +88,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
     event.preventDefault();
     const value = current.current;
     if (!value || busy.current || preparing || value.status === "saving" || (kind === "doordash" && !value.proof)) return;
-    setError(""); setErrors({});
+    setError(""); setErrors({}); setShowSaved(false);
     const common = { id: value.id, store_id: value.storeId, work_date: value.date };
     const parsed = kind === "review" ? reviewSubmissionSchema.safeParse({ ...common, note: value.note }) : doordashSubmissionSchema.safeParse({ ...common, subscription_number: value.subscription, dd_proof_added: value.proof });
     if (!parsed.success) { setErrors(Object.fromEntries(parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]))); return; }
@@ -105,7 +106,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
       dispatched = true;
       await chrome.runtime.sendMessage({ type: "save", owner: account.userId, kind, token: session.data.session.access_token });
       const stored = await readDraft(account.userId, kind);
-      if (stored) { current.current = stored; setDraft(stored); if (stored.status === "saved") savedCallback.current(); }
+      if (stored) { current.current = stored; setDraft(stored); if (stored.status === "saved") { setShowSaved(true); savedCallback.current(); } }
     } catch {
       if (dispatched) {
         // Leave the stored identity and payload intact. Polling reconciles worker state.
@@ -114,7 +115,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
     } finally { busy.current = false; setSubmitting(false); }
   }
 
-  if (!draft) return <div role={storageError ? "alert" : "status"} className="py-4 text-sm text-muted-foreground">{storageError || "Restoring your draft..."}{storageError ? <Button variant="ghost" onClick={() => setReload((value) => value + 1)}>Retry</Button> : null}</div>;
+  if (!draft) return storageError ? <div role="alert" className="py-4 text-sm text-muted-foreground">{storageError}<Button variant="ghost" onClick={() => setReload((value) => value + 1)}>Retry</Button></div> : <div role="status" className="flex flex-col gap-3"><span className="sr-only">Restoring entry</span><div aria-hidden="true" className="h-16 rounded-xl bg-muted" /><div aria-hidden="true" className="h-24 rounded-xl bg-muted" /><div aria-hidden="true" className="h-11 rounded-xl bg-muted" /></div>;
   return <WorkspacePanel id="quick-entry-title" title={kind === "review" ? "Add review" : "Add DoorDash"}>
     <form onSubmit={submit} aria-busy={submitting || draft.status === "saving"} className="popup-entry-form">
       {error || Object.values(errors).some(Boolean) ? <div ref={alert} role="alert" tabIndex={-1} className="rounded-md bg-error-background p-3 text-sm text-error-foreground"><p>{error || "Check the highlighted fields."}</p>{Object.entries(errors).filter(([, message]) => message).map(([field, message]) => <a key={field} href={`#quick-${field}`} className="mt-1 block underline">{message}</a>)}</div> : null}
@@ -136,7 +137,7 @@ export function QuickEntry({ kind, account, context, defaultStore, onSaved }: {
       {storageError ? <p role="alert" className="text-sm text-destructive">{storageError}</p> : null}
       {draft.status === "draft" && draft.message ? <p role="alert" className="rounded-md bg-error-background p-3 text-sm text-error-foreground">{draft.message}</p> : null}
       {draft.status === "uncertain" ? <p role="alert" className="rounded-md bg-warning-background p-3 text-sm text-warning-foreground">{draft.message} Details stay locked until confirmed.</p> : null}
-      {draft.status === "saved" ? <p role="status" className="flex items-center gap-2 text-sm text-success-foreground"><Check aria-hidden="true" className="size-4" />{draft.message}</p> : null}
+      {draft.status === "saved" && showSaved ? <p role="status" className="flex items-center gap-2 text-sm text-success-foreground"><Check aria-hidden="true" className="size-4" />{draft.message}</p> : null}
       <div className="flex flex-col gap-2 border-t pt-3">
         <Button type="submit" variant={kind === "doordash" ? "delivery" : "default"} className="min-h-11 w-full" disabled={submitting || draft.status === "saving" || preparing || (kind === "review" && !limit) || (kind === "doordash" && !draft.proof)}>{submitting || draft.status === "saving" || preparing ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : null}{preparing ? "Preparing screenshot..." : draft.status === "saving" || submitting ? kind === "review" ? "Uploading and saving..." : "Saving..." : draft.status === "uncertain" ? "Retry same entry" : kind === "review" ? "Save review" : "Save DoorDash"}</Button>
       </div>
